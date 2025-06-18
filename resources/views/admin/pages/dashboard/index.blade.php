@@ -1,4 +1,15 @@
 @extends('layouts.admin.main')
+@push('page-header')
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">
+            <span class="text-muted fw-light"></span> Dashboard
+        </h4>
+        <button class="btn btn-primary open-global-modal" data-url="{{ url('your.route.create') }}"
+            data-title="Form Create Data">
+            Modal
+        </button>
+    </div>
+@endpush
 @section('content')
     <div class="row">
         <!-- Website Analytics -->
