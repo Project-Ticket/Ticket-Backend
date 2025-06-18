@@ -11,6 +11,13 @@
     <title>Dashboard - Analytics | Vuexy - Bootstrap Admin Template</title>
 
     @include('layouts.admin.components.style_css')
+    <style>
+        .bg-menu-theme.menu-horizontal .menu-item.active>.menu-link:not(.menu-toggle) {
+            background: linear-gradient(72.47deg, #7367f0 22.16%, rgba(115, 103, 240, 0.7) 76.47%) !important;
+            color: #fff !important;
+            box-shadow: 0px 2px 6px 0px rgba(115, 103, 240, 0.48);
+        }
+    </style>
     @stack('scripts')
 </head>
 

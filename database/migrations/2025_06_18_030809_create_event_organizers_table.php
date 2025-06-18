@@ -37,6 +37,15 @@ return new class extends Migration
             $table->enum('verification_status', ['pending', 'verified', 'rejected'])->default('pending');
             $table->text('verification_notes')->nullable();
             $table->timestamp('verified_at')->nullable();
+            $table->enum('application_status', ['pending', 'under_review', 'approved', 'rejected'])->default('pending');
+            $table->decimal('application_fee', 12, 2)->nullable();
+            $table->decimal('security_deposit', 12, 2)->nullable();
+            $table->json('required_documents')->nullable();
+            $table->json('uploaded_documents')->nullable();
+            $table->text('rejection_reason')->nullable();
+            $table->datetime('application_submitted_at')->nullable();
+            $table->foreignId('reviewed_by')->nullable()->constrained('users');
+            $table->datetime('reviewed_at')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();
         });
