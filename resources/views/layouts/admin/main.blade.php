@@ -66,6 +66,14 @@
             </form>
         </div>
     </div>
+
+    {{-- Button to open the modal --}}
+    <button class="btn btn-primary open-global-modal" data-url="{{ route('your.route.create') }}"
+        data-title="Form Create Data">
+        Launch Modal
+    </button>
+
+
     <!-- Overlay -->
     <div class="layout-overlay layout-menu-toggle"></div>
 
