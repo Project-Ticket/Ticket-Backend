@@ -19,7 +19,7 @@
         <div class="layout-container">
             <!-- Navbar -->
 
-            @include('layouts.admin.navbar')
+            @include('layouts.admin.header')
 
             <!-- / Navbar -->
 
@@ -28,12 +28,12 @@
                 <!-- Content wrapper -->
                 <div class="content-wrapper">
                     <!-- Menu -->
-                    @include('layouts.admin.menu')
+                    @include('layouts.admin.navbar')
                     <!-- / Menu -->
 
                     <!-- Content -->
 
-                    <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="container-fluid flex-grow-1 container-p-y">
                         @yield('content')
                     </div>
                     <!--/ Content -->
