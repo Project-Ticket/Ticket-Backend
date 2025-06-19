@@ -1,0 +1,225 @@
+1. SUPER ADMIN
+Full System Access - Emergency & Critical Operations
+System Management
+
+✅ Backup & restore database
+✅ Server configuration & monitoring
+✅ Update aplikasi & maintenance mode
+✅ Access log & security monitoring
+✅ Database direct access
+
+User & Role Management
+
+✅ Create/delete admin accounts
+✅ Assign/revoke all permissions
+✅ View all user activities
+✅ Reset any user password
+✅ Permanent delete users
+
+Financial & Critical
+
+✅ Access payment gateway settings
+✅ View all financial reports
+✅ Manual refund processing
+✅ Emergency order cancellation
+✅ System-wide settings configuration
+
+
+2. ADMIN
+Business Operations - Daily Management
+User Management
+
+✅ View all users list
+✅ Suspend/activate users
+✅ View user profiles & activities
+✅ Handle customer complaints
+✅ Reset customer passwords
+
+Organizer Management
+
+✅ Review organizer applications
+✅ Approve/reject organizer registration
+✅ Verify organizer documents
+✅ Suspend/activate organizer accounts
+✅ Monitor organizer performance
+✅ Handle organizer disputes
+
+Content Moderation
+
+✅ Approve/reject events before publish
+✅ Moderate event content & images
+✅ Moderate merchandise listings
+✅ Approve/reject reviews
+✅ Handle content reports
+
+Order & Payment Management
+
+✅ View all orders (tickets & merchandise)
+✅ Process refund requests
+✅ Handle payment disputes
+✅ Manual order status changes
+✅ Generate financial reports
+
+Analytics & Reporting
+
+✅ View platform analytics
+✅ Generate business reports
+✅ Monitor platform performance
+✅ Export data for analysis
+✅ View commission reports
+
+Customer Service
+
+✅ Handle support tickets
+✅ Live chat with customers
+✅ Process complaint escalations
+✅ Manage FAQ & help center
+
+
+3. ORGANIZER
+Event & Merchandise Management - Content Creator
+Account & Profile
+
+✅ Apply for organizer status
+✅ Complete organizer verification
+✅ Manage organizer profile
+✅ Upload legal documents
+✅ Update bank account info
+
+Event Management
+
+✅ Create new events
+✅ Edit own events
+✅ Delete own events
+✅ Upload event images & gallery
+✅ Set event categories & tags
+✅ Manage event venue & details
+✅ Publish/unpublish events
+
+Ticket Management
+
+✅ Create ticket types & pricing
+✅ Set ticket quotas & limits
+✅ Manage ticket sales period
+✅ Scan tickets at event (QR Scanner)
+✅ Generate attendee lists
+✅ Export ticket sales data
+
+Merchandise Management
+
+✅ Create merchandise products
+✅ Manage product variants (size, color, etc)
+✅ Set merchandise pricing
+✅ Upload product images
+✅ Manage inventory stock
+✅ Process merchandise orders
+✅ Update shipping status
+✅ Generate shipping labels
+
+Order Management
+
+✅ View own event orders
+✅ View own merchandise orders
+✅ Process refund requests (to admin)
+✅ Update order status
+✅ Communicate with buyers
+✅ Export order reports
+
+Marketing & Promotion
+
+✅ Create discount coupons
+✅ Set promo codes
+✅ Manage coupon validity
+✅ Share event on social media
+✅ View marketing analytics
+
+Analytics & Reports
+
+✅ View own event analytics
+✅ View own merchandise analytics
+✅ Track sales performance
+✅ View revenue reports
+✅ Download payout reports
+✅ Monitor customer reviews
+
+Financial Management
+
+✅ View earnings dashboard
+✅ Request withdrawals
+✅ View transaction history
+✅ Download tax reports
+✅ Manage payout settings
+
+
+4. CUSTOMER
+End User - Buyer Experience
+Account Management
+
+✅ Register & login
+✅ Complete profile
+✅ Upload profile picture
+✅ Manage personal information
+✅ Change password
+✅ Apply to become organizer
+
+Event Discovery
+
+✅ Browse all events
+✅ Search events by category/location
+✅ Filter events by date/price
+✅ View event details
+✅ Add events to wishlist
+✅ Share events on social media
+
+Ticket Purchasing
+
+✅ Select ticket types
+✅ Add tickets to cart
+✅ Apply discount coupons
+✅ Choose payment method
+✅ Complete payment
+✅ Download e-tickets
+✅ View QR codes
+
+Merchandise Shopping
+
+✅ Browse merchandise
+✅ View product details
+✅ Select product variants
+✅ Add to cart
+✅ Add to wishlist
+✅ Checkout merchandise
+✅ Track shipping status
+
+Order Management
+
+✅ View order history (tickets & merchandise)
+✅ Download invoices
+✅ Track order status
+✅ Request refunds
+✅ Contact organizer
+✅ Resend e-tickets
+
+Social Features
+
+✅ Write event reviews
+✅ Rate events & merchandise
+✅ Upload review photos
+✅ Like/unlike reviews
+✅ Follow favorite organizers
+
+Communication
+
+✅ Receive notifications
+✅ Chat with customer service
+✅ Contact event organizer
+✅ Report problems
+✅ Submit feedback
+
+Wishlist & Preferences
+
+✅ Manage wishlist
+✅ Set event preferences
+✅ Get event recommendations
+✅ Subscribe to organizer updates
+✅ Notification settings

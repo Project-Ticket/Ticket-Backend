@@ -197,15 +197,16 @@ class Status
      */
     private static function getBadgeClass(string $status): string
     {
-        return match ($status) {
-            'ACTIVE', 'PUBLISHED', 'PAID', 'DELIVERED', 'VERIFIED' => 'badge-success',
-            'PENDING', 'DRAFT', 'PROCESSING' => 'badge-warning',
-            'INACTIVE', 'CANCELLED', 'SUSPENDED', 'REJECTED', 'REFUNDED', 'EXPIRED' => 'badge-danger',
-            'USED', 'TRANSFERRED', 'SHIPPED', 'COMPLETED' => 'badge-info',
-            'TIP' => 'badge-primary',
-            default => 'badge-secondary'
+        return match (strtoupper($status)) {
+            'ACTIVE', 'PUBLISHED', 'PAID', 'DELIVERED', 'VERIFIED' => 'badge bg-success',
+            'PENDING', 'DRAFT', 'PROCESSING' => 'badge bg-warning',
+            'INACTIVE', 'CANCELLED', 'SUSPENDED', 'REJECTED', 'REFUNDED', 'EXPIRED' => 'badge bg-danger',
+            'USED', 'TRANSFERRED', 'SHIPPED', 'COMPLETED' => 'badge bg-info',
+            'TIP' => 'badge bg-primary',
+            default => 'badge bg-secondary'
         };
     }
+
 
     /**
      * Get icon for status

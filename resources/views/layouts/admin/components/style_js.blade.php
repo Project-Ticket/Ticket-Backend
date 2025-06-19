@@ -20,35 +20,74 @@
 
 <!-- Main JS -->
 <script src="{{ url('/admin') }}/js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Page JS -->
-<script src="{{ url('/admin') }}/js/dashboards-analytics.js"></script>
 
 <script>
-    $(document).on('click', '.open-global-modal', function(e) {
+    // Modal handler
+    $(document).on('click', '.open-global-modal', function (e) {
         e.preventDefault();
 
-        const url = $(this).data('url');
-        const title = $(this).data('title') || 'Modal Title';
+        let url = $(this).data('url');
+        let title = $(this).data('title') ?? 'Loading...';
 
-        $('#globalModalTitle').text(title);
-        $('#globalModalBody').html('<div class="text-center">Loading...</div>');
-        $('#globalModalFooter').html(
-            '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>');
+        $('#globalModal').modal('show');
+        $('#modal-content-container').html(`
+        <div class="modal-body text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `);
 
         $.ajax({
             url: url,
-            type: 'GET',
-            success: function(response) {
-                $('#globalModalBody').html(response.body || response);
-                if (response.footer) {
-                    $('#globalModalFooter').html(response.footer);
-                }
-                $('#globalModal').modal('show');
+            method: 'GET',
+            success: function (response) {
+                $('#modal-content-container').html(response);
             },
-            error: function(xhr) {
-                $('#globalModalBody').html(
-                    '<div class="alert alert-danger">Failed to load content.</div>');
+            error: function () {
+                $('#modal-content-container').html(`
+                <div class="modal-body">
+                    <div class="alert alert-danger">Gagal memuat data. Coba lagi nanti.</div>
+                </div>
+            `);
+            }
+        });
+    });
+
+    // Offcanvas handler
+    $(document).on('click', '.open-global-offcanvas', function (e) {
+        e.preventDefault();
+
+        let url = $(this).data('url');
+        let title = $(this).data('title') ?? 'Loading...';
+
+        $('#globalOffcanvas').offcanvas?.dispose?.(); // Reset jika sebelumnya pernah dipakai
+
+        $('#offcanvas-content-container').html(`
+        <div class="offcanvas-body text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `);
+
+        const offcanvasInstance = new bootstrap.Offcanvas('#globalOffcanvas');
+        offcanvasInstance.show();
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            success: function (response) {
+                $('#offcanvas-content-container').html(response);
+            },
+            error: function () {
+                $('#offcanvas-content-container').html(`
+                <div class="offcanvas-body">
+                    <div class="alert alert-danger">Gagal memuat data. Coba lagi nanti.</div>
+                </div>
+            `);
             }
         });
     });

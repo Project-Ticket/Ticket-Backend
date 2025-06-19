@@ -1,7 +1,7 @@
 <nav class="layout-navbar navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
     <div class="container-fluid">
         <div class="navbar-brand app-brand demo d-none d-xl-flex py-0 me-4">
-            <a href="index.html" class="app-brand-link gap-2">
+            <a href="{{ url('/~admin-panel') }}" class="app-brand-link gap-2">
                 <span class="app-brand-logo demo">
                     <svg width="32" height="22" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" clip-rule="evenodd"
@@ -16,7 +16,7 @@
                             fill="#7367F0" />
                     </svg>
                 </span>
-                <span class="app-brand-text demo menu-text fw-bold">Vuexy</span>
+                <span class="app-brand-text demo menu-text fw-bold">{{ $setting }}</span>
             </a>
 
             <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
@@ -289,8 +289,8 @@
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <span class="fw-semibold d-block">John Doe</span>
-                                        <small class="text-muted">Admin</small>
+                                        <span class="fw-semibold d-block">{{ Auth::user()->name }}</span>
+                                        <small class="text-muted">{{ Auth::user()->roles()->first()->name }}</small>
                                     </div>
                                 </div>
                             </a>

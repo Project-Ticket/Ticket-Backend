@@ -1,3 +1,6 @@
+@php
+    use App\Services\SettingService;
+@endphp
 <!DOCTYPE html>
 
 <html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default"
@@ -7,8 +10,10 @@
     <meta charset="utf-8" />
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-
-    <title>Dashboard - Analytics | Vuexy - Bootstrap Admin Template</title>
+    @php
+        $setting = SettingService::get('app_name', 'default app');
+    @endphp
+    <title>{{ $setting }}</title>
 
     @include('layouts.admin.components.style_css')
     <style>
@@ -18,7 +23,7 @@
             box-shadow: 0px 2px 6px 0px rgba(115, 103, 240, 0.48);
         }
     </style>
-    @stack('scripts')
+    @stack('styles')
 </head>
 
 <body>
@@ -58,20 +63,27 @@
     </div>
 
     <!-- Global Modal -->
-    <div class="modal fade" id="globalModal" data-bs-backdrop="static" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <form class="modal-content" id="globalModalForm">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="globalModalTitle">Loading...</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal modal-blur fade" id="globalModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content" id="modal-content-container">
+                <!-- Konten AJAX akan dimuat di sini -->
+                <div class="modal-body text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
-                <div class="modal-body" id="globalModalBody">
-                    <div class="text-center">Loading content...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Offcanvas -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="globalOffcanvas" aria-labelledby="globalOffcanvasTitle">
+        <div id="offcanvas-content-container">
+            <div class="offcanvas-body text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
-                <div class="modal-footer" id="globalModalFooter">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 

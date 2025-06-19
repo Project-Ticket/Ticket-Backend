@@ -789,3 +789,6 @@
         <!--/ Projects table -->
     </div>
 @endsection
+@push('scripts')
+    <script src="{{ url('/admin') }}/js/dashboards-analytics.js"></script>
+@endpush
