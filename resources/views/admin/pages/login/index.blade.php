@@ -24,11 +24,11 @@
         <h3 class="mb-1 fw-bold">Welcome to Vuexy! 👋</h3>
         <p class="mb-4">Please sign-in to your account and start the adventure</p>
 
-        <form id="formAuthentication" class="mb-3" action="index.html" method="POST">
+        <form id="form-login" class="mb-3" method="POST">
             <div class="mb-3">
                 <label for="email" class="form-label">Email or Username</label>
                 <input type="text" class="form-control" id="email" name="email-username"
-                    placeholder="Enter your email or username" autofocus />
+                    placeholder="Enter your email or username" value="superadmin@mailinator.com" autofocus />
             </div>
             <div class="mb-3 form-password-toggle">
                 <div class="d-flex justify-content-between">
@@ -79,3 +79,58 @@
         </div>
     </div>
 @endsection
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            $('#form-login').on('submit', function (e) {
+                e.preventDefault();
+
+                const login = $('#email').val();
+                const password = $('#password').val();
+
+                $.ajax({
+                    url: "{{ route('login') }}",
+                    method: "POST",
+                    data: {
+                        login: login,
+                        password: password,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    beforeSend: function () {
+                        Swal.fire({
+                            title: 'Logging in...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = response.data.redirect;
+                        });
+                    },
+                    error: function (xhr) {
+                        let message = 'Terjadi kesalahan.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: message
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

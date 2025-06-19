@@ -189,8 +189,8 @@
                         <div class="progress w-100" style="height: 8px">
                             <div class="progress-bar bg-info" style="width: 70%" role="progressbar" aria-valuenow="70"
                                 aria-valuemin="0" aria-valuemax="100"></div>
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: 30%"
-                                aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 30%" aria-valuenow="30"
+                                aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
                     </div>
                 </div>

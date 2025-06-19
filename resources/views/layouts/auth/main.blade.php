@@ -13,6 +13,7 @@
     <meta name="description" content="" />
 
     @include('layouts.auth.components.style_css')
+    @stack('css')
 </head>
 
 <body>
@@ -43,6 +44,7 @@
     <!-- / Content -->
 
     @include('layouts.auth.components.style_js')
+    @stack('scripts')
 </body>
 
 </html>
