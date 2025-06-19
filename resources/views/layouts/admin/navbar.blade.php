@@ -10,6 +10,21 @@
             </li>
 
             <!-- Config Section -->
+            <li class="menu-item {{ Request::segment(2) == 'user' ? 'active' : '' }}">
+                <a href="javascript:void(0)" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons ti ti-user"></i>
+                    <div>User Management</div>
+                </a>
+                <ul class="menu-sub">
+                    <!-- Permission -->
+                    <li class="menu-item {{ Request::segment(2) == 'user' ? 'active' : '' }}">
+                        <a href="{{ route('user') }}" class="menu-link">
+                            <i class="menu-icon tf-icons ti ti-user"></i>
+                            <div>User</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
             <li class="menu-item {{ Request::segment(2) == 'config' ? 'active' : '' }}">
                 <a href="javascript:void(0)" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons ti ti-settings"></i>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\Config\AssignPermissionController;
 use App\Http\Controllers\Web\Config\PermissionController;
 use App\Http\Controllers\Web\Config\SettingController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -17,6 +18,17 @@ Route::prefix('~admin-panel')->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->name('login');
 
     Route::middleware('auth')->group(function () {
+
+        Route::group(['prefix' => 'user', 'controller' => UserController::class], function () {
+            Route::get('/', 'index')->name('user');
+            Route::get('/getData', 'getData')->name('user.getData');
+            Route::get('/create', 'create')->name('user.create');
+            Route::post('/store', 'store')->name('user.store');
+            Route::get('/{uuid}/show', 'show')->name('user.show');
+            Route::get('/{uuid}/edit', 'edit')->name('user.edit');
+            Route::put('/{uuid}/update', 'update')->name('user.update');
+            Route::delete('/{id}', 'destroy')->name('user.destroy');
+        });
 
         Route::prefix('config')->name('config.')->group(function () {
             Route::group(['prefix' => 'permission', 'controller' => PermissionController::class], function () {
