@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\Config\AssignPermissionController;
 use App\Http\Controllers\Web\Config\PermissionController;
 use App\Http\Controllers\Web\Config\SettingController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\EventOragnizerController;
 use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\UserEventOrganizerController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,12 @@ Route::prefix('~admin-panel')->group(function () {
                 Route::get('/filter', 'filter')->name('user.filter');
             });
         });
+
+        Route::get('/event-organizer', [EventOragnizerController::class, 'index'])->name('event-organizer');
+        Route::get('/event-organizer/getData', [EventOragnizerController::class, 'getData'])->name('event-organizer.getData');
+        Route::get('/event-organizer/create', [EventOragnizerController::class, 'create'])->name('event-organizer.create');
+        Route::post('/event-organizer/store', [EventOragnizerController::class, 'store'])->name('event-organizer.store');
+
 
         Route::prefix('config')->name('config.')->group(function () {
             Route::group(['prefix' => 'permission', 'controller' => PermissionController::class], function () {
