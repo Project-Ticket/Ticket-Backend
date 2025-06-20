@@ -61,4 +61,9 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
         ];
     }
+
+    public function eventOrganizer()
+    {
+        return $this->hasOne(EventOrganizer::class);
+    }
 }

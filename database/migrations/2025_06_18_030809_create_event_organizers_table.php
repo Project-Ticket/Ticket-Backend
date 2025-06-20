@@ -34,10 +34,12 @@ return new class extends Migration
             $table->string('bank_name')->nullable();
             $table->string('bank_account_number')->nullable();
             $table->string('bank_account_name')->nullable();
-            $table->enum('verification_status', ['pending', 'verified', 'rejected'])->default('pending');
+            $table->enum('verification_status', ['pending', 'verified', 'rejected'])->default('pending')
+                ->comment('Status verifikasi legalitas dan dokumen EO oleh admin');;
             $table->text('verification_notes')->nullable();
             $table->timestamp('verified_at')->nullable();
-            $table->enum('application_status', ['pending', 'under_review', 'approved', 'rejected'])->default('pending');
+            $table->enum('application_status', ['pending', 'under_review', 'approved', 'rejected'])->default('pending')
+                ->comment('Status pengajuan EO untuk aktif menjadi penyelenggara event');;
             $table->decimal('application_fee', 12, 2)->nullable();
             $table->decimal('security_deposit', 12, 2)->nullable();
             $table->json('required_documents')->nullable();
@@ -46,7 +48,8 @@ return new class extends Migration
             $table->datetime('application_submitted_at')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users');
             $table->datetime('reviewed_at')->nullable();
-            $table->integer('status')->default(1);
+            $table->integer('status')->default(1)
+                ->comment('Status aktif/nonaktif data EO, 1 = aktif, 0 = nonaktif');;
             $table->timestamps();
         });
     }

@@ -1,0 +1,101 @@
+ Super Admin – Management Fitur Wajib
+Super Admin sebaiknya bisa mengakses dan mengelola semua data sistem. Namun kamu bisa beri fitur hanya pada data yang "vital" jika ingin lebih ringan.
+
+Berikut adalah daftar fitur dan data yang wajib dikelola Super Admin:
+
+User Management
+
+CRUD user untuk semua role (user, admin, event organizer)
+
+Aktivasi, suspensi, penghapusan
+
+Reset password
+
+Role & Permission Management (jika pakai Spatie)
+
+Tambah/edit role
+
+Assign permission
+
+Event Organizer Management
+
+Lihat semua EO
+
+Approve / reject verifikasi EO
+
+Lihat semua event dari semua EO
+
+Event Management
+
+Lihat semua event
+
+Hapus event yang bermasalah (spam, ilegal, dll)
+
+Publish/unpublish event
+
+Merchandise Management
+
+Lihat semua merchandise
+
+Hapus atau nonaktifkan yang tidak sesuai
+
+Category & Tag Management
+
+CRUD untuk kategori event dan merchandise
+
+CRUD tag event
+
+Coupon Management
+
+Lihat semua kupon dari semua EO
+
+Buat kupon global (jika sistem kamu mendukung itu)
+
+Review Management
+
+Approve/reject review
+
+Lihat review yang dilaporkan
+
+Order Overview (Tickets + Merchandise)
+
+Lihat statistik penjualan
+
+Melihat pesanan dari semua EO
+
+Settings (Konfigurasi Aplikasi)
+
+Manajemen settings global (site name, fee, metode pembayaran, dsb.)
+
+Notification Log
+
+Cek notifikasi sistem & pengguna
+
+Audit Trail (Opsional)
+
+Log aktivitas admin/admin EO (jika ingin high-level audit)
+
+✅ Admin – Fitur Lebih Terbatas dari Super Admin
+Admin bisa:
+
+Lihat & kelola user (role: user saja)
+
+Approve / suspend user
+
+Review semua event, merchandise, review
+
+Approve / suspend event & merchandise (tanpa bisa edit kontennya)
+
+Lihat pesanan tiket & merchandise
+
+Melihat dan approve kupon (EO tidak bisa seenaknya)
+
+Akses dashboard statistik umum
+
+Tidak bisa:
+
+Kelola super admin
+
+Mengubah setting global
+
+Menambah admin/super admin lain

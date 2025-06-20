@@ -1,4 +1,4 @@
-<form action="{{ route('user.update', $user->uuid) }}" method="POST" id="user-edit-form">
+<form action="{{ route('user-management.user.update', $user->uuid) }}" method="POST" id="user-edit-form">
     @csrf
     @method('PUT')
     <div class="modal-header">

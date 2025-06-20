@@ -2,10 +2,10 @@
 
 @push('page-header')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0">
+        <h5 class="fw-bold mb-0">
             <span class="text-muted fw-light">Dashboard / User Management</span> / User
-        </h4>
-        <button class="btn btn-primary open-global-modal" data-url="{{ route('user.create') }}"
+        </h5>
+        <button class="btn btn-primary open-global-modal" data-url="{{ route('user-management.user.create') }}"
             data-title="Add New Setting">
             Add New User
         </button>
@@ -14,7 +14,16 @@
 
 @section('content')
     <div class="card">
-        <h5 class="card-header">User</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1 text-primary">User Management</h4>
+                <p class="mb-0 text-muted">Manage system users and their permissions</p>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm open-global-offcanvas"
+                data-url="{{ route('user-management.user.filter') }}" data-title="Add New Setting">
+                <i class="fas fa-filter me-1"></i> Filter
+            </button>
+        </div>
         <div class="card-datatable table-responsive pt-0">
             <table class="table table-bordered table-hover" id="user-table">
                 <thead>
@@ -28,6 +37,7 @@
                         <th>Status</th>
                         <th>Birth Date</th>
                         <th>Created At</th>
+                        <th>Role</th>
                         <th width="120px">Action</th>
                     </tr>
                 </thead>
@@ -38,11 +48,21 @@
 
 @push('scripts')
     <script>
+        let userTable;
+
         $(function () {
-            $('#user-table').DataTable({
+            userTable = $('#user-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('user.getData') }}',
+                ajax: {
+                    url: '{{ route('user-management.user.getData') }}',
+                    data: function (d) {
+                        const formData = $('#user-filter-form').serializeArray();
+                        formData.forEach(item => {
+                            d[item.name] = item.value;
+                        });
+                    }
+                },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'name', name: 'name' },
@@ -53,9 +73,21 @@
                     { data: 'status', name: 'status', orderable: false, searchable: false },
                     { data: 'birth_date', name: 'birth_date' },
                     { data: 'created_at', name: 'created_at' },
+                    { data: 'roles', name: 'roles' },
                     { data: 'action', name: 'action', orderable: false, searchable: false },
                 ]
             });
+
+            // Submit filter
+            $(document).on('submit', '#user-filter-form', function (e) {
+                e.preventDefault();
+                userTable.ajax.reload();
+
+                // JANGAN reset form — biarkan input tetap terisi
+                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('globalOffcanvas'));
+                if (offcanvas) offcanvas.hide(); // tutup offcanvas via Bootstrap instance
+            });
+
         });
 
         $(document).on('click', '.btn-global-delete', function (e) {

@@ -92,3 +92,37 @@
         });
     });
 </script>
+
+{{--
+<script>
+    $(document).ready(function () {
+        function loadOptions(type, parentId, target) {
+            $.get('/wilayah-dropdown', { type: type, parent: parentId }, function (data) {
+                let html = '<option value="">Pilih</option>';
+                data.forEach(item => html += `<option value="${item.name}">${item.name}</option>`);
+                $(target).html(html).prop('disabled', false);
+            });
+        }
+
+        // load province
+        loadOptions('province', null, '#province');
+
+        $('#province').change(function () {
+            const id = $(this).find('option:selected').index();
+            $('#regency, #district, #village').html('<option value="">Pilih</option>').prop('disabled', true);
+            if (id > 0) loadOptions('regency', id, '#regency');
+        });
+
+        $('#regency').change(function () {
+            const id = $(this).find('option:selected').index();
+            $('#district, #village').html('<option value="">Pilih</option>').prop('disabled', true);
+            if (id > 0) loadOptions('district', id, '#district');
+        });
+
+        $('#district').change(function () {
+            const id = $(this).find('option:selected').index();
+            $('#village').html('<option value="">Pilih</option>').prop('disabled', true);
+            if (id > 0) loadOptions('village', id, '#village');
+        });
+    });
+</script> --}}

@@ -10,16 +10,16 @@
             </li>
 
             <!-- Config Section -->
-            <li class="menu-item {{ Request::segment(2) == 'user' ? 'active' : '' }}">
+            <li class="menu-item {{ Request::segment(2) == 'user-management' ? 'active' : '' }}">
                 <a href="javascript:void(0)" class="menu-link menu-toggle">
-                    <i class="menu-icon tf-icons ti ti-user"></i>
+                    <i class="menu-icon tf-icons ti ti-users"></i>
                     <div>User Management</div>
                 </a>
                 <ul class="menu-sub">
                     <!-- Permission -->
-                    <li class="menu-item {{ Request::segment(2) == 'user' ? 'active' : '' }}">
-                        <a href="{{ route('user') }}" class="menu-link">
-                            <i class="menu-icon tf-icons ti ti-user"></i>
+                    <li class="menu-item {{ Request::segment(3) == 'user' ? 'active' : '' }}">
+                        <a href="{{ route('user-management.user') }}" class="menu-link">
+                            <i class="menu-icon tf-icons ti ti-user-circle"></i>
                             <div>User</div>
                         </a>
                     </li>

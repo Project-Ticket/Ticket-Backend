@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class SettingService
 {
@@ -15,7 +15,7 @@ class SettingService
         $cacheKey = "setting.{$key}";
 
         return Cache::remember($cacheKey, 3600, function () use ($key, $default) {
-            $setting = Setting::where('key', $key)->first();
+            $setting = DB::table('settings')->where('key', $key)->first();
 
             if (!$setting) {
                 return $default;
@@ -30,24 +30,27 @@ class SettingService
      */
     public static function set($key, $value)
     {
-        $setting = Setting::where('key', $key)->first();
+        $setting = DB::table('settings')->where('key', $key)->first();
 
         if ($setting) {
-            $setting->value = is_array($value) ? json_encode($value) : $value;
-            $setting->updated_at = now();
-            $setting->save();
+            DB::table('settings')
+                ->where('key', $key)
+                ->update([
+                    'value' => is_array($value) ? json_encode($value) : $value,
+                    'updated_at' => now()
+                ]);
         } else {
-            Setting::create([
-                'key'        => $key,
-                'value'      => is_array($value) ? json_encode($value) : $value,
-                'type'       => self::detectType($value),
-                'group'      => 'custom',
-                'is_public'  => false,
+            DB::table('settings')->insert([
+                'key' => $key,
+                'value' => is_array($value) ? json_encode($value) : $value,
+                'type' => self::detectType($value),
+                'group' => 'custom',
                 'created_at' => now(),
-                'updated_at' => now(),
+                'updated_at' => now()
             ]);
         }
 
+        // Clear cache
         Cache::forget("setting.{$key}");
 
         return true;
@@ -61,7 +64,7 @@ class SettingService
         $cacheKey = "settings.group.{$group}";
 
         return Cache::remember($cacheKey, 3600, function () use ($group) {
-            $settings = Setting::where('group', $group)->get();
+            $settings = DB::table('settings')->where('group', $group)->get();
 
             $result = [];
             foreach ($settings as $setting) {
@@ -80,7 +83,7 @@ class SettingService
         $cacheKey = "settings.public";
 
         return Cache::remember($cacheKey, 3600, function () {
-            $settings = Setting::where('is_public', true)->get();
+            $settings = DB::table('settings')->where('is_public', true)->get();
 
             $result = [];
             foreach ($settings as $setting) {
@@ -124,12 +127,12 @@ class SettingService
      */
     public static function clearCache()
     {
-        $keys = Setting::pluck('key');
+        $keys = DB::table('settings')->pluck('key');
         foreach ($keys as $key) {
             Cache::forget("setting.{$key}");
         }
 
-        $groups = Setting::distinct()->pluck('group');
+        $groups = DB::table('settings')->distinct()->pluck('group');
         foreach ($groups as $group) {
             Cache::forget("settings.group.{$group}");
         }

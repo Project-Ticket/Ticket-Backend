@@ -1,4 +1,4 @@
-<form action="{{ route('user.store') }}" method="POST" id="user-form">
+<form action="{{ route(name: 'user-management.user.store') }}" method="POST" id="user-form">
     @csrf
     <div class="modal-header">
         <h5 class="modal-title">Add New User</h5>
@@ -6,6 +6,15 @@
     </div>
 
     <div class="modal-body row">
+        <div class="mb-3 col-12">
+            <label class="form-label">Role</label>
+            <select name="role" id="role_id" class="form-select mb-2">
+                <option disabled>-- Pilih Role --</option>
+                @foreach ($roles as $role)
+                    <option value="{{ $role->name }}">{{$role->name}}</option>
+                @endforeach
+            </select>
+        </div>
         <div class="mb-3 col-md-6">
             <label class="form-label">Name</label>
             <input type="text" name="name" class="form-control" required>
