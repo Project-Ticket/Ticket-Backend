@@ -25,6 +25,55 @@
                     </li>
                 </ul>
             </li>
+
+            <!-- Event Management -->
+            <li class="menu-item {{ Request::segment(2) == 'event-organizer' ? 'active' : '' }}">
+                <a href="{{ route('event-organizer') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-ticket"></i>
+                    <div>Event Organizer</div>
+                </a>
+            </li>
+
+
+            <!-- Merchandise Management -->
+            <li class="menu-item {{ Request::segment(2) == 'merchandise' ? 'active' : '' }}">
+                <a href="{{ url('merchandise.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-shopping-bag"></i>
+                    <div>Merchandise</div>
+                </a>
+            </li>
+
+
+            <!-- Review Moderation -->
+            <li class="menu-item {{ Request::segment(2) == 'review' ? 'active' : '' }}">
+                <a href="{{ url('review.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-message-check"></i>
+                    <div>Review Moderation</div>
+                </a>
+            </li>
+
+
+            <!-- Order Monitoring -->
+            <li class="menu-item {{ Request::segment(2) == 'order' ? 'active' : '' }}">
+                <a href="javascript:void(0)" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons ti ti-receipt"></i>
+                    <div>Orders</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item {{ Request::is('admin/order') ? 'active' : '' }}">
+                        <a href="{{ url('order.index') }}" class="menu-link">
+                            <div>Event Orders</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-item {{ Request::is('admin/merch-order') ? 'active' : '' }}">
+                        <a href="{{ url('merchandise.order.index') }}" class="menu-link">
+                            <div>Merchandise Orders</div>
+                        </a>
+                    </li>
+
+                </ul>
+            </li>
             <li class="menu-item {{ Request::segment(2) == 'config' ? 'active' : '' }}">
                 <a href="javascript:void(0)" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons ti ti-settings"></i>
