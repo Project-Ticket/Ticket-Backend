@@ -45,8 +45,13 @@ Route::prefix('~admin-panel')->group(function () {
 
         Route::get('/event-organizer', [EventOragnizerController::class, 'index'])->name('event-organizer');
         Route::get('/event-organizer/getData', [EventOragnizerController::class, 'getData'])->name('event-organizer.getData');
-        Route::get('/event-organizer/create', [EventOragnizerController::class, 'create'])->name('event-organizer.create');
-        Route::post('/event-organizer/store', [EventOragnizerController::class, 'store'])->name('event-organizer.store');
+        Route::delete('/event-organizer/destroy/{id}', [EventOragnizerController::class, 'destroy'])->name('event-organizer.destroy');
+        Route::get('/event-organizer/{id}/show', [EventOragnizerController::class, 'show'])->name('event-organizer.show');
+        Route::get('/event-organizer/reject-application-modal/{uuid}', [EventOragnizerController::class, 'rejectApplication'])->name('event-organizer.reject-application-modal');
+        Route::get('/event-organizer/reject-verification-modal/{uuid}', [EventOragnizerController::class, 'rejectVerification'])->name('event-organizer.reject-verification-modal');
+        Route::post('/event-organizer/update-status/{uuid}', [EventOragnizerController::class, 'updateStatus'])->name('event-organizer.update-status');
+        Route::post('/event-organizer/{uuid}/mark-under-review', [EventOragnizerController::class, 'markUnderReview'])
+            ->name('event-organizer.mark-under-review');
 
 
         Route::prefix('config')->name('config.')->group(function () {

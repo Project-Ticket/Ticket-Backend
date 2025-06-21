@@ -8,6 +8,7 @@ use App\Models\EventOrganizer;
 use App\Models\User;
 use App\Services\Status;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -28,6 +29,10 @@ class EventOragnizerController extends Controller
 
             return DataTables::of($organizers)
                 ->addIndexColumn()
+                ->editColumn('organization_name', function ($row) {
+                    return '<a href="javascript:void(0)" class="fw-bold text-primary link-under-review" data-uuid="' . $row->uuid . '" data-url="' . route('event-organizer.show', $row->uuid) . '">' . $row->organization_name . '</a>';
+                })
+
                 ->addColumn('owner_name', fn($row) => $row->user->name ?? '-')
                 ->addColumn('owner_email', fn($row) => $row->user->email ?? '-')
                 ->addColumn('owner_phone', fn($row) => $row->user->phone ?? '-')
@@ -37,17 +42,115 @@ class EventOragnizerController extends Controller
                 ->addColumn('action', function ($row) {
                     return '
                     <div class="d-flex justify-content-center">
-                        <button class="btn btn-warning open-global-modal me-1" data-url="' . url('event-organizer.edit', $row->id) . '" data-title="Edit Event Organizer">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-global-delete" data-url="' . url('event-organizer.destroy', $row->id) . '">
+                        <button class="btn btn-danger btn-global-delete" data-url="' . route('event-organizer.destroy', $row->id) . '">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 ';
                 })
-                ->rawColumns(['status', 'verification_status', 'action'])
+                ->rawColumns(['organization_name', 'status', 'verification_status', 'action'])
                 ->make(true);
+        }
+    }
+
+    public function markUnderReview($uuid)
+    {
+        $organizer = EventOrganizer::where('uuid', $uuid)->firstOrFail();
+
+        // Update hanya jika masih 'pending'
+        if ($organizer->application_status === 'pending') {
+            $organizer->application_status = 'under_review';
+            $organizer->reviewed_by = Auth::user()->id;
+            $organizer->reviewed_at = now();
+            $organizer->save();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function show($uuid)
+    {
+        $organizer = EventOrganizer::with(['user'])->where('uuid', $uuid)->firstOrFail();
+
+        if (
+            $organizer->application_status === 'under_review' &&
+            $organizer->reviewed_by !== Auth::id()
+        ) {
+            return redirect()->back()->with('error', 'Aplikasi ini sedang direview oleh pengguna lain.');
+        }
+
+        return view('admin.pages.event-organizer.show', compact('organizer'));
+    }
+
+    public function rejectVerification($uuid)
+    {
+        $organizer = EventOrganizer::where('uuid', $uuid)->firstOrFail();
+        return view('admin.pages.event-organizer.reject-verification-modal', compact('organizer'));
+    }
+
+    public function rejectApplication($uuid)
+    {
+        $organizer = EventOrganizer::where('uuid', $uuid)->firstOrFail();
+        return view('admin.pages.event-organizer.reject-application-modal', compact('organizer'));
+    }
+
+    public function updateStatus(Request $request, $uuid)
+    {
+        $request->validate([
+            'status_type'  => 'required|in:application_status,verification_status',
+            'status_value' => 'required|string',
+            'rejection_reason' => 'required_if:status_value,rejected|string|nullable',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $organizer = EventOrganizer::where('uuid', $uuid)->first();
+
+            if (!$organizer) {
+                return back()->with('error', 'Event Organizer tidak ditemukan.');
+            }
+
+            if ($request->status_type === 'application_status') {
+                $organizer->application_status = $request->status_value;
+                $organizer->rejection_reason   = $request->status_value === 'rejected' ? $request->rejection_reason : null;
+                $organizer->reviewed_by        = Auth::user()->id;
+                $organizer->reviewed_at        = now();
+            }
+
+            // Tambahan jika kamu juga ingin meng-handle verification_status
+            if ($request->status_type === 'verification_status') {
+                $organizer->verification_status = $request->status_value;
+                $organizer->verification_notes  = $request->status_value === 'rejected' ? $request->rejection_reason : null;
+                $organizer->verified_at         = now();
+            }
+
+            $organizer->save();
+            DB::commit();
+
+            return back()->with('success', 'Status berhasil diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat memperbarui status.');
+        }
+    }
+
+
+    public function destroy($id)
+    {
+        $organizer = EventOrganizer::findOrFail($id);
+        $user = User::findOrFail($organizer->user_id);
+
+        DB::beginTransaction();
+        try {
+            $organizer->delete();
+            $user->delete();
+
+            DB::commit();
+            return MessageResponseJson::success('Event Organizer and associated user deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return MessageResponseJson::serverError('Failed to delete Event Organizer: ' . $e->getMessage());
         }
     }
 }

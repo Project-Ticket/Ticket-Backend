@@ -95,6 +95,23 @@
 
     <!--/ Layout wrapper -->
     @include('layouts.admin.components.style_js')
+    @if (session('success'))
+        <script type="text/javascript">
+            Swal.fire({
+                title: "Berhasil",
+                text: "{{ session('success') }}",
+                icon: "success"
+            });
+        </script>
+    @endif
+    @if (session('error'))
+        <script type="text/javascript">
+            Swal.fire({
+                title: "{{ session('error') }}",
+                icon: "error"
+            });
+        </script>
+    @endif
     @stack('scripts')
 </body>
 

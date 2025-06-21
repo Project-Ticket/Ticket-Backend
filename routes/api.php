@@ -19,6 +19,9 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/event-organizer/store', [EventOrganizerController::class, 'store']);
+    Route::put('/event-organizer/{uuid}/update', [EventOrganizerController::class, 'update']);
+    Route::get('/event-organizer/{uuid}/show', [EventOrganizerController::class, 'show']);
+    Route::delete('/event-organizer/{uuid}/delete', [EventOrganizerController::class, 'destroy']);
 
     Route::post('/logout', LogoutController::class);
 });
