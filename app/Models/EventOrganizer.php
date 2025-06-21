@@ -60,6 +60,6 @@ class EventOrganizer extends Model
 
     public function events()
     {
-        return $this->hasMany(Event::class, 'organizer_id');
+        return $this->hasMany(Event::class, 'organizer_id', 'id');
     }
 }

@@ -24,43 +24,53 @@ class EventOragnizerController extends Controller
 
     public function getData(Request $request)
     {
-        if ($request->ajax()) {
-            $organizers = EventOrganizer::with('user')->select('event_organizers.*');
-
-            return DataTables::of($organizers)
-                ->addIndexColumn()
-                ->editColumn('organization_name', function ($row) {
-                    return '<a href="javascript:void(0)" class="fw-bold text-primary link-under-review" data-uuid="' . $row->uuid . '" data-url="' . route('event-organizer.show', $row->uuid) . '">' . $row->organization_name . '</a>';
-                })
-
-                ->addColumn('owner_name', fn($row) => $row->user->name ?? '-')
-                ->addColumn('owner_email', fn($row) => $row->user->email ?? '-')
-                ->addColumn('owner_phone', fn($row) => $row->user->phone ?? '-')
-                ->editColumn('status', fn($row) => Status::getBadgeHtml('userStatus', $row->status))
-                ->editColumn('verification_status', fn($row) => $row->verification_status)
-                ->editColumn('created_at', fn($row) => $row->created_at->format('d M Y'))
-                ->addColumn('action', function ($row) {
-                    return '
-                    <div class="d-flex justify-content-center gap-1">
-                        <a href="' . url('event-organizer.events', $row->uuid) . '" class="btn btn-info" title="Lihat Events">
-                            <i class="fas fa-list"></i>
-                        </a>
-                        <button class="btn btn-danger btn-global-delete" data-url="' . route('event-organizer.destroy', $row->id) . '" title="Hapus">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                    ';
-                })
-                ->rawColumns(['organization_name', 'status', 'verification_status', 'action'])
-                ->make(true);
+        if (!$request->ajax()) {
+            return response()->json(['message' => 'Invalid request'], 400);
         }
+
+        $organizers = EventOrganizer::with('user')->select('event_organizers.*');
+
+        return DataTables::of($organizers)
+            ->addIndexColumn()
+            ->editColumn('organization_name', function ($row) {
+                return '<a href="javascript:void(0)" class="fw-bold text-primary link-under-review" data-uuid="' . $row->uuid . '" data-url="' . route('event-organizer.show', $row->uuid) . '">' . e($row->organization_name) . '</a>';
+            })
+            ->addColumn('owner_name', fn($row) => optional($row->user)->name ?? '-')
+            ->addColumn('owner_email', fn($row) => optional($row->user)->email ?? '-')
+            ->addColumn('owner_phone', fn($row) => optional($row->user)->phone ?? '-')
+            ->editColumn('status', fn($row) => Status::getBadgeHtml('userStatus', $row->status))
+            ->editColumn('verification_status', function ($row) {
+                if ($row->verification_status === 'pending') {
+                    return '<span class="badge bg-warning text-dark">Pending</span>';
+                } elseif ($row->verification_status === 'verified') {
+                    return '<span class="badge bg-success">Verified</span>';
+                } elseif ($row->verification_status === 'rejected') {
+                    return '<span class="badge bg-danger">Rejected</span>';
+                } else {
+                    return '<span class="badge bg-secondary">Unknown</span>';
+                }
+            })
+            ->editColumn('created_at', fn($row) => $row->created_at->format('d M Y'))
+            ->addColumn('action', function ($row) {
+                return '
+                <div class="d-flex justify-content-center gap-1">
+                    <a href="' . route('event-organizer.show-events', $row->uuid) . '" class="btn btn-info" title="Lihat Events">
+                        <i class="fas fa-list"></i>
+                    </a>
+                    <button class="btn btn-danger btn-global-delete" data-url="' . route('event-organizer.destroy', $row->id) . '" title="Hapus">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            ';
+            })
+            ->rawColumns(['organization_name', 'status', 'verification_status', 'action'])
+            ->make(true);
     }
 
     public function markUnderReview($uuid)
     {
         $organizer = EventOrganizer::where('uuid', $uuid)->firstOrFail();
 
-        // Update hanya jika masih 'pending'
         if ($organizer->application_status === 'pending') {
             $organizer->application_status = 'under_review';
             $organizer->reviewed_by = Auth::user()->id;
@@ -83,6 +93,72 @@ class EventOragnizerController extends Controller
         }
 
         return view('admin.pages.event-organizer.show', compact('organizer'));
+    }
+
+    public function showEvents(Request $request, $uuid)
+    {
+        $organizer = EventOrganizer::where('uuid', $uuid)
+            ->with(['user', 'events' => function ($query) use ($request) {
+                // Apply filters
+                if ($request->filled('status') && $request->status !== 'all') {
+                    $query->where('status', $request->status);
+                }
+
+                if ($request->filled('search')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('title', 'like', '%' . $request->search . '%')
+                            ->orWhere('description', 'like', '%' . $request->search . '%')
+                            ->orWhere('location', 'like', '%' . $request->search . '%');
+                    });
+                }
+
+                // Order by latest
+                $query->orderBy('created_at', 'desc');
+            }])
+            ->firstOrFail();
+
+        // Get events with pagination
+        $eventsQuery = $organizer->events();
+
+        // Apply the same filters for pagination
+        if ($request->filled('status') && $request->status !== 'all') {
+            $eventsQuery->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $eventsQuery->where(function ($q) use ($request) {
+                $q->where('title', 'like', '%' . $request->search . '%')
+                    ->orWhere('description', 'like', '%' . $request->search . '%')
+                    ->orWhere('location', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $events = $eventsQuery->withCount('registrations')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        // Calculate statistics
+        $totalEvents = $organizer->events()->count();
+        $activeEvents = $organizer->events()->where('status', 'active')->count();
+        $upcomingEvents = $organizer->events()
+            ->where('start_datetime', '>', now())
+            ->whereIn('status', ['published', 'active'])
+            ->count();
+
+        // Calculate total participants across all events
+        $totalParticipants = $organizer->events()
+            ->withCount('registrations')
+            ->get()
+            ->sum('registrations_count');
+
+        return view('admin.pages.event-organizer.event', compact(
+            'organizer',
+            'events',
+            'totalEvents',
+            'activeEvents',
+            'upcomingEvents',
+            'totalParticipants'
+        ));
     }
 
     public function rejectVerification($uuid)
@@ -137,7 +213,6 @@ class EventOragnizerController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memperbarui status.');
         }
     }
-
 
     public function destroy($id)
     {

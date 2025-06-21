@@ -48,7 +48,7 @@ class Event extends Model
 
     public function organizer()
     {
-        return $this->belongsTo(EventOrganizer::class, 'organizer_id');
+        return $this->belongsTo(EventOrganizer::class, 'organizer_id', 'id');
     }
 
     public function category()
@@ -59,5 +59,9 @@ class Event extends Model
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'event_tags')->withTimestamps();
+    }
+    public function registrations()
+    {
+        return $this->hasMany(TicketType::class, 'event_id', 'id');
     }
 }

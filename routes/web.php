@@ -49,16 +49,19 @@ Route::prefix('~admin-panel')->group(function () {
             });
         });
 
-        Route::get('/event-organizer', [EventOragnizerController::class, 'index'])->name('event-organizer');
-        Route::get('/event-organizer/getData', [EventOragnizerController::class, 'getData'])->name('event-organizer.getData');
-        Route::delete('/event-organizer/destroy/{id}', [EventOragnizerController::class, 'destroy'])->name('event-organizer.destroy');
-        Route::get('/event-organizer/{id}/show', [EventOragnizerController::class, 'show'])->name('event-organizer.show');
-        Route::get('/event-organizer/reject-application-modal/{uuid}', [EventOragnizerController::class, 'rejectApplication'])->name('event-organizer.reject-application-modal');
-        Route::get('/event-organizer/reject-verification-modal/{uuid}', [EventOragnizerController::class, 'rejectVerification'])->name('event-organizer.reject-verification-modal');
-        Route::post('/event-organizer/update-status/{uuid}', [EventOragnizerController::class, 'updateStatus'])->name('event-organizer.update-status');
-        Route::post('/event-organizer/{uuid}/mark-under-review', [EventOragnizerController::class, 'markUnderReview'])
-            ->name('event-organizer.mark-under-review');
+        Route::group(['prefix' => 'event-organizer', 'controller' => EventOragnizerController::class], function () {
+            Route::get('/', 'index')->name('event-organizer');
+            Route::get('/getData', 'getData')->name('event-organizer.getData');
+            Route::delete('/destroy/{id}', 'destroy')->name('event-organizer.destroy');
+            Route::get('/{id}/show', 'show')->name('event-organizer.show');
 
+            Route::get('/{uuid}/reject-application-modal', 'rejectApplication')->name('event-organizer.reject-application-modal');
+            Route::get('/{uuid}/reject-verification-modal', 'rejectVerification')->name('event-organizer.reject-verification-modal');
+            Route::post('/{uuid}/update-status', 'updateStatus')->name('event-organizer.update-status');
+            Route::post('/{uuid}/mark-under-review', 'markUnderReview')->name('event-organizer.mark-under-review');
+
+            Route::get('/{uuid}/organizer-event', 'showEvents')->name('event-organizer.show-events');
+        });
 
         Route::prefix('config')->name('config.')->group(function () {
             Route::group(['prefix' => 'permission', 'controller' => PermissionController::class], function () {
