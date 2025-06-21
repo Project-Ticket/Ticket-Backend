@@ -64,7 +64,7 @@ class RegisterController extends Controller
 
             $user->assignRole('User');
 
-            $user->sendEmailVerificationNotification();
+            // $user->sendEmailVerificationNotification();
 
             DB::commit();
 

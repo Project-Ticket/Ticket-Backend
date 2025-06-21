@@ -41,12 +41,15 @@ class EventOragnizerController extends Controller
                 ->editColumn('created_at', fn($row) => $row->created_at->format('d M Y'))
                 ->addColumn('action', function ($row) {
                     return '
-                    <div class="d-flex justify-content-center">
-                        <button class="btn btn-danger btn-global-delete" data-url="' . route('event-organizer.destroy', $row->id) . '">
+                    <div class="d-flex justify-content-center gap-1">
+                        <a href="' . url('event-organizer.events', $row->uuid) . '" class="btn btn-info" title="Lihat Events">
+                            <i class="fas fa-list"></i>
+                        </a>
+                        <button class="btn btn-danger btn-global-delete" data-url="' . route('event-organizer.destroy', $row->id) . '" title="Hapus">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
-                ';
+                    ';
                 })
                 ->rawColumns(['organization_name', 'status', 'verification_status', 'action'])
                 ->make(true);

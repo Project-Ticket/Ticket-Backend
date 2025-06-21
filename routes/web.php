@@ -40,6 +40,12 @@ Route::prefix('~admin-panel')->group(function () {
                 Route::put('/{uuid}/update', 'update')->name('user.update');
                 Route::delete('/{id}', 'destroy')->name('user.destroy');
                 Route::get('/filter', 'filter')->name('user.filter');
+
+                Route::post('/update-status', 'changeUserStatus')
+                    ->name('user.update-status');
+                Route::get('/update-password-modal/{uuid}', 'changePasswordModal')
+                    ->name('user.update-password-modal');
+                Route::post('/update-password', [UserController::class, 'updatePassword'])->name('user.update-password');
             });
         });
 

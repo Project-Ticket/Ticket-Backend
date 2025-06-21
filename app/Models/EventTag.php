@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class EventTag extends Model
 {
-    protected $guarded = ['id'];
+    protected $table = 'event_tags';
 }

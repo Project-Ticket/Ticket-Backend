@@ -3,19 +3,19 @@ Super Admin sebaiknya bisa mengakses dan mengelola semua data sistem. Namun kamu
 
 Berikut adalah daftar fitur dan data yang wajib dikelola Super Admin:
 
-User Management
+User Management (Done)
 
-CRUD user untuk semua role (user, admin, event organizer)
+CRUD user untuk semua role (user, admin, event organizer) (done)
 
-Aktivasi, suspensi, penghapusan
+Aktivasi, suspensi, penghapusan (done)
 
-Reset password
+Reset password (done)
 
-Role & Permission Management (jika pakai Spatie)
+Role & Permission Management (jika pakai Spatie) (nanti)
 
-Tambah/edit role
+Tambah/edit role (nanti)
 
-Assign permission
+Assign permission (nanti)
 
 Event Organizer Management
 

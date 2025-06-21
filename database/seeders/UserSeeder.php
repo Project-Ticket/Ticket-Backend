@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
         $organizer->assignRole('Organizer');
 
         $user = User::factory()->create([
-
+            'name' => 'User',
             'email' => 'user@mailinator.com',
         ]);
         $user->assignRole('User');

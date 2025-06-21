@@ -68,6 +68,11 @@ class UserController extends Controller
                             <button class="btn btn-warning open-global-modal me-1" data-url="' . route('user-management.user.edit', $row->uuid) . '" data-title="Edit User">
                                 <i class="fas fa-edit"></i>
                             </button>
+                             <button class="btn btn-primary open-global-modal me-1"
+                                data-url="' . route('user-management.user.update-password-modal', $row->uuid) . '"
+                                data-title="Change Password">
+                                <i class="fas fa-key"></i>
+                            </button>
                             <button class="btn btn-danger btn-global-delete" data-url="' . route('user-management.user.destroy', $row->uuid) . '">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
@@ -247,5 +252,88 @@ class UserController extends Controller
         $data['userStatuses'] = Status::getAll('userStatus');
 
         return view('admin.pages.user-management.user.filter', $data);
+    }
+
+    public function changeUserStatus(Request $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            $request->validate([
+                'user_id'   => 'required|exists:users,id',
+                'status_id' => 'required|integer',
+            ]);
+
+            $user = User::findOrFail($request->user_id);
+            $currentStatus = $user->status;
+            $newStatus     = $request->status_id;
+
+            if (!Status::exists('userStatus', $newStatus)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid status ID.',
+                ], 422);
+            }
+
+            if ($currentStatus == $newStatus) {
+                return response()->json([
+                    'status'  => 'warning',
+                    'message' => 'User is already in this status.',
+                ]);
+            }
+
+            if (!Status::isValidTransition('userStatus', $currentStatus, $newStatus)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid status transition.',
+                ], 422);
+            }
+
+            $user->status = $newStatus;
+            $user->save();
+
+            DB::commit();
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'User status updated to ' . Status::getName('userStatus', $newStatus) . '.',
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to update user status.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function changePasswordModal($uuid)
+    {
+        $user = User::where('uuid', $uuid)->firstOrFail();
+        return view('admin.pages.user-management.user.update-password-modal', compact('user'));
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            $user = User::findOrFail($request->user_id);
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            return response()->json(['message' => 'Password berhasil diubah.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal mengubah password.'], 500);
+        }
     }
 }

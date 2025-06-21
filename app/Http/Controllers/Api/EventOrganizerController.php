@@ -19,6 +19,37 @@ class EventOrganizerController extends Controller
     {
         $this->eventOrganizer = new EventOrganizer();
     }
+
+    public function index(Request $request)
+    {
+        try {
+            $query = $this->eventOrganizer->query();
+
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            if ($request->filled('application_status')) {
+                $query->where('application_status', $request->application_status);
+            }
+
+            if ($request->filled('verification_status')) {
+                $query->where('verification_status', $request->verification_status);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            $eventOrganizers = $query->orderBy('created_at', 'desc')->paginate(10);
+
+            return MessageResponseJson::paginated('List Event Organizers retrieved successfully', $eventOrganizers);
+        } catch (\Throwable $th) {
+            return MessageResponseJson::serverError('Failed to fetch Event Organizers', [$th->getMessage()]);
+        }
+    }
+
+
     public function store(Request $request)
     {
         DB::beginTransaction();
@@ -53,6 +84,10 @@ class EventOrganizerController extends Controller
             return MessageResponseJson::validationError(
                 errors: $validator->errors()->toArray()
             );
+        }
+
+        if (!Auth::user()->hasRole('User')) {
+            return MessageResponseJson::forbidden('Hanya pengguna dengan role "User" yang dapat mendaftar sebagai Event Organizer.');
         }
 
         $existing = $this->eventOrganizer->where('user_id', Auth::id())->first();

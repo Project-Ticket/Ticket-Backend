@@ -4,7 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class tag extends Model
+class Tag extends Model
 {
-    protected $guarded = ['id'];
+    protected $fillable = ['name', 'slug', 'color', 'is_active'];
+
+    public function events()
+    {
+        return $this->belongsToMany(Event::class, 'event_tags')->withTimestamps();
+    }
 }
