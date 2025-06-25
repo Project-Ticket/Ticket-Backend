@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PaymentMethod;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -16,6 +17,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             UserSeeder::class,
+            CategorySeeder::class,
+            PaymentMethodSeeder::class
         ]);
     }
 }
