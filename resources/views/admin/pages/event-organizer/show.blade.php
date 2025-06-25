@@ -28,30 +28,36 @@
                 <li>
                     <hr class="dropdown-divider">
                 </li>
-                <li><a class="dropdown-item text-success" href="#"
-                        onclick="updateStatus('verification_status', 'verified')">
-                        <i class="fas fa-check-circle me-2"></i>Verifikasi</a></li>
-                <li>
+                @if ($organizer->verification_status == 'pending')
+                    <li>
+                        <a class="dropdown-item text-success" href="#"
+                            onclick="updateStatus('verification_status', 'verified')">
+                            <i class="fas fa-check-circle me-2"></i>Verifikasi</a>
+                    </li>
+                    <li>
 
-                    <button class="dropdown-item text-warning open-global-modal"
-                        data-url="{{ route('event-organizer.reject-verification-modal', $organizer->uuid) }}"
-                        data-title="Add New Setting">
-                        <i class="fas fa-times-circle me-2"></i>Tolak Verifikasi
-                    </button>
-                </li>
+                        <button class="dropdown-item text-warning open-global-modal"
+                            data-url="{{ route('event-organizer.reject-verification-modal', $organizer->uuid) }}"
+                            data-title="Add New Setting">
+                            <i class="fas fa-times-circle me-2"></i>Tolak Verifikasi
+                        </button>
+                    </li>
+                @endif
                 <li>
                     <hr class="dropdown-divider">
                 </li>
-                <li><a class="dropdown-item text-success" href="#" onclick="updateStatus('application_status', 'approved')">
-                        <i class="fas fa-thumbs-up me-2"></i>Setujui Aplikasi</a>
-                </li>
-                <li>
-                    <button class="dropdown-item text-warning open-global-modal"
-                        data-url="{{ route('event-organizer.reject-application-modal', $organizer->uuid) }}"
-                        data-title="Add New Setting">
-                        <i class="fas fa-thumbs-down me-2"></i>Tolak Aplikasi
-                    </button>
-                </li>
+                @if ($organizer->application_status == 'pending' || $organizer->application_status == 'under_review')
+                    <li><a class="dropdown-item text-success" href="#" onclick="updateStatus('application_status', 'approved')">
+                            <i class="fas fa-thumbs-up me-2"></i>Setujui Aplikasi</a>
+                    </li>
+                    <li>
+                        <button class="dropdown-item text-warning open-global-modal"
+                            data-url="{{ route('event-organizer.reject-application-modal', $organizer->uuid) }}"
+                            data-title="Add New Setting">
+                            <i class="fas fa-thumbs-down me-2"></i>Tolak Aplikasi
+                        </button>
+                    </li>
+                @endif
                 <li>
                     <hr class="dropdown-divider">
                 </li>
@@ -517,42 +523,59 @@
 
     <script>
         function updateStatus(statusType, statusValue) {
-            if (confirm('Apakah Anda yakin ingin mengubah status ini?')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '{{ url("event-organizer.update-status", $organizer->id) }}';
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: 'Anda akan mengubah status ini!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, ubah!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route("event-organizer.update-status", $organizer->uuid) }}';
 
-                form.innerHTML = `
-                                                                                                                                                @csrf
-                                                                                                                                                @method('PUT')
-                                                                                                                                                <input type="hidden" name="status_type" value="${statusType}">
-                                                                                                                                                <input type="hidden" name="status_value" value="${statusValue}">
-                                                                                                                                            `;
+                    form.innerHTML = `
+                                @csrf
+                                <input type="hidden" name="status_type" value="${statusType}">
+                                <input type="hidden" name="status_value" value="${statusValue}">
+                            `;
 
-                document.body.appendChild(form);
-                form.submit();
-            }
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
 
         function toggleActiveStatus() {
-            const newStatus = {{ $organizer->status }} == 1 ? 0 : 1;
+            const currentStatus = {{ $organizer->status }};
+            const newStatus = currentStatus == 1 ? 2 : 1;
             const action = newStatus == 1 ? 'mengaktifkan' : 'menonaktifkan';
 
-            if (confirm(`Apakah Anda yakin ingin ${action} Event Organizer ini?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '{{ url("event-organizer.update-status", $organizer->id) }}';
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: `Anda akan ${action} Event Organizer ini.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: `Ya, ${action}`,
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route("event-organizer.update-status", $organizer->uuid) }}';
 
-                form.innerHTML = `
-                                                                                                                                                @csrf
-                                                                                                                                                @method('PUT')
-                                                                                                                                                <input type="hidden" name="status_type" value="status">
-                                                                                                                                                <input type="hidden" name="status_value" value="${newStatus}">
-                                                                                                                                            `;
+                    form.innerHTML = `
+                                @csrf
+                                <input type="hidden" name="status_type" value="status">
+                                <input type="hidden" name="status_value" value="${newStatus}">
+                            `;
 
-                document.body.appendChild(form);
-                form.submit();
-            }
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
     </script>
 @endsection

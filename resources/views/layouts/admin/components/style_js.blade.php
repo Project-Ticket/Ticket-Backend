@@ -17,6 +17,7 @@
 <script src="{{ url('/admin') }}/vendor/libs/apex-charts/apexcharts.js"></script>
 <script src="{{ url('/admin') }}/vendor/libs/swiper/swiper.js"></script>
 <script src="{{ url('/admin') }}/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+<script src="{{ url('/admin') }}/js/form-basic-inputs.js"></script>
 
 <!-- Main JS -->
 <script src="{{ url('/admin') }}/js/main.js"></script>

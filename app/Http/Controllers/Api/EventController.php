@@ -12,6 +12,7 @@ use App\Rules\ValidateStatus;
 use App\Services\Status;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -86,7 +87,6 @@ class EventController extends Controller
         DB::beginTransaction();
 
         $validator = Validator::make($request->all(), [
-            'organizer_id'          => 'required|exists:event_organizers,id',
             'category_id'           => 'required|exists:categories,id',
             'title'                 => 'required|string|max:255',
             'description'           => 'required|string',
@@ -120,10 +120,13 @@ class EventController extends Controller
         }
 
         try {
-            $organizer = $this->eventOrganizer->findOrFail($request->organizer_id);
+            if (!Auth::user()->hasRole('Organizer')) {
+                return MessageResponseJson::unauthorized("User must be an organizer to create an event.");
+            }
+            $organizer = $this->eventOrganizer->findOrFail(Auth::user()->eventOrganizer->id);
 
             if ($organizer->status !== 1 || $organizer->verification_status !== 'verified' || $organizer->application_status !== 'approved') {
-                return MessageResponseJson::unprocessable("Event organizer tidak valid untuk membuat event.");
+                return MessageResponseJson::unauthorized("Event organizer tidak valid untuk membuat event.");
             }
 
             $baseSlug = Str::slug($request->title);
@@ -142,6 +145,7 @@ class EventController extends Controller
             }
 
             $data = $request->except('tags');
+            $data['organizer_id'] = $organizer->id;
             $data['slug'] = $slug;
             $data['banner_image'] = $bannerPath;
             $data['gallery_images'] = $galleryPaths ? json_encode($galleryPaths) : null;
@@ -165,7 +169,6 @@ class EventController extends Controller
                         'updated_at' => now(),
                     ];
                 })->toArray();
-
                 EventTag::insert($tagData);
             }
 
@@ -210,7 +213,6 @@ class EventController extends Controller
         DB::beginTransaction();
 
         $validator = Validator::make($request->all(), [
-            'organizer_id'          => 'sometimes|exists:event_organizers,id',
             'category_id'           => 'sometimes|exists:categories,id',
             'title'                 => 'sometimes|string|max:255',
             'description'           => 'sometimes|string',
@@ -233,7 +235,6 @@ class EventController extends Controller
             'registration_end'      => 'sometimes|date|after:registration_start|before:start_datetime',
             'min_age'               => 'nullable|integer|min:1|max:100',
             'max_age'               => 'nullable|integer|min:1|max:100|gte:min_age',
-            'status'                => 'sometimes|integer|in:0,1',
             'is_featured'           => 'boolean',
             'tags'                  => 'nullable|array',
             'tags.*'                => 'string|max:255',

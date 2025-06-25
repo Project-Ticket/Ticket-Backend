@@ -29,11 +29,17 @@
             <!-- Event Management -->
             <li class="menu-item {{ Request::segment(2) == 'event-organizer' ? 'active' : '' }}">
                 <a href="{{ route('event-organizer') }}" class="menu-link">
-                    <i class="menu-icon tf-icons ti ti-ticket"></i>
+                    <i class="menu-icon tf-icons ti ti-building-minus"></i>
                     <div>Event Organizer</div>
                 </a>
             </li>
 
+            <li class="menu-item {{ Request::segment(2) == 'event' ? 'active' : '' }}">
+                <a href="{{ route('event') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-ticket"></i>
+                    <div>Event</div>
+                </a>
+            </li>
 
             <!-- Merchandise Management -->
             <li class="menu-item {{ Request::segment(2) == 'merchandise' ? 'active' : '' }}">
@@ -74,6 +80,7 @@
 
                 </ul>
             </li>
+
             <li class="menu-item {{ Request::segment(2) == 'config' ? 'active' : '' }}">
                 <a href="javascript:void(0)" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons ti ti-settings"></i>
@@ -87,7 +94,12 @@
                             <div>Permission</div>
                         </a>
                     </li>
-
+                    <li class="menu-item {{ Request::segment(3) == 'payment-method' ? 'active' : '' }}">
+                        <a href="{{ route('config.payment-method') }}" class="menu-link">
+                            <i class="menu-icon tf-icons ti ti-cash-banknote"></i>
+                            <div>Payment Method</div>
+                        </a>
+                    </li>
                     <!-- Assign Permission -->
                     <li class="menu-item {{ Request::segment(3) == 'assign-permission' ? 'active' : '' }}">
                         <a href="{{ route('config.assign') }}" class="menu-link">

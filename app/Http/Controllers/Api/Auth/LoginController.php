@@ -6,7 +6,9 @@ use App\Facades\MessageResponseJson;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Status;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -20,7 +22,7 @@ class LoginController extends Controller
     {
         $this->user = new User();
     }
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         DB::beginTransaction();
         $validator = Validator::make($request->all(), [
@@ -50,20 +52,46 @@ class LoginController extends Controller
 
             DB::commit();
 
-            return MessageResponseJson::success('Login successful', [
-                'user' => $user,
-                'token' => $token
-            ]);
+            // Cookie::queue(cookie(
+            //     'auth_token',
+            //     $token,
+            //     60 * 24 * 7, // 7 hari
+            //     null,
+            //     null,
+            //     true,
+            //     true,
+            //     false,
+            //     'Strict' // secure, httpOnly, raw, sameSite
+            // ));
+
+            return response()->json([
+                'success' => true,
+                'code' => 200,
+                'message' => 'Login successful',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token
+                ]
+            ])->withCookie(cookie(
+                'auth_token',
+                $token,
+                60 * 24 * 7, // 7 days
+                null,
+                null,
+                false, //set true for HTTPS set false for HTTP
+                true,
+                false
+            ));
         } catch (\Throwable $th) {
             DB::rollBack();
             return MessageResponseJson::serverError('Something went wrong', [$th->getMessage()]);
         }
     }
 
-    public function checkAuth(Request $request)
+    public function checkAuth(Request $request): JsonResponse
     {
         try {
-            $token = $request->bearerToken();
+            $token = $request->cookie('auth_token');
 
             if (!$token) {
                 return MessageResponseJson::unauthorized();
@@ -72,7 +100,7 @@ class LoginController extends Controller
             $tokenData = PersonalAccessToken::findToken($token);
 
             if (!$tokenData) {
-                return MessageResponseJson::unauhtorized();
+                return MessageResponseJson::unauthorized();
             }
 
             $user = $tokenData->tokenable;
@@ -84,14 +112,14 @@ class LoginController extends Controller
             $eventOrganizer = $user->eventOrganizer()->first();
 
             $user->is_event_organizer = $eventOrganizer && $eventOrganizer->status == 1;
-            $user->appliaction_status_organizer   = $eventOrganizer ? $eventOrganizer->application_status : null;
-            $user->verification_status_organizer = $eventOrganizer ? $eventOrganizer->verification_status : null;
+            $user->appliaction_status_organizer = $eventOrganizer?->application_status;
+            $user->verification_status_organizer = $eventOrganizer?->verification_status;
 
             return MessageResponseJson::success('Token is valid', [
                 'user' => $user,
             ]);
         } catch (\Throwable $e) {
-            return MessageResponseJson::error('Authentication check failed' . $e->getMessage());
+            return MessageResponseJson::serverError('Authentication check failed: ' . $e->getMessage());
         }
     }
 }

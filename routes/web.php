@@ -4,20 +4,15 @@ use App\Helpers\WilayahHelpersDropdown;
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\Auth\LogoutController;
 use App\Http\Controllers\Web\Config\AssignPermissionController;
+use App\Http\Controllers\Web\Config\PaymentMethodController;
 use App\Http\Controllers\Web\Config\PermissionController;
 use App\Http\Controllers\Web\Config\SettingController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\EventController;
 use App\Http\Controllers\Web\EventOragnizerController;
 use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\UserEventOrganizerController;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/wilayah-dropdown', function () {
-    $type = request('type'); // province, regency, district, village
-    $parent = request('parent'); // ID dari level sebelumnya
-
-    return response()->json(WilayahHelpersDropdown::fetch($type, $parent));
-});
 
 Route::get('/', function () {
     return view('welcome');
@@ -61,7 +56,16 @@ Route::prefix('~admin-panel')->group(function () {
             Route::post('/{uuid}/mark-under-review', 'markUnderReview')->name('event-organizer.mark-under-review');
 
             Route::get('/{uuid}/organizer-event', 'showEvents')->name('event-organizer.show-events');
+
+            Route::get('/events/detail/{id}', 'showEventDetails')->name('event-organizer.show-event-details');
+            Route::get('/{id}/participants', 'showParticipants')->name('event-organizer.show-participants');
         });
+
+        Route::group(['prefix' => 'event', 'controller' => EventController::class], function () {
+            Route::get('/', 'index')->name('event');
+            Route::get('/getData', 'getData')->name('event.getData');
+        });
+
 
         Route::prefix('config')->name('config.')->group(function () {
             Route::group(['prefix' => 'permission', 'controller' => PermissionController::class], function () {
@@ -88,6 +92,16 @@ Route::prefix('~admin-panel')->group(function () {
                 Route::get('/{id}/edit', 'edit')->name('setting.edit');
                 Route::put('/{id}', 'update')->name('setting.update');
                 Route::delete('/{id}', 'destroy')->name('setting.destroy');
+            });
+
+            Route::group(['prefix' => 'payment-method', 'controller' => PaymentMethodController::class], function () {
+                Route::get('/', 'index')->name('payment-method');
+                Route::get('/getData', 'getData')->name('payment-method.getData');
+                Route::get('/create', 'create')->name('payment-method.create');
+                Route::post('/store', 'store')->name('payment-method.store');
+                Route::get('/{id}/edit', 'edit')->name('payment-method.edit');
+                Route::put('/{id}', 'update')->name('payment-method.update');
+                Route::delete('/{id}', 'destroy')->name('payment-method.destroy');
             });
         });
         Route::get('/', [DashboardController::class, 'admin'])->name('dashboard');

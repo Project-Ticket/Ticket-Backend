@@ -17,15 +17,15 @@ Tambah/edit role (nanti)
 
 Assign permission (nanti)
 
-Event Organizer Management
+# Event Organizer Management
 
-Lihat semua EO
+Lihat semua EO (done)
 
-Approve / reject verifikasi EO
+Approve / reject verifikasi EO (done)
 
-Lihat semua event dari semua EO
+Lihat semua event dari semua EO (done)
 
-Event Management
+# Event Management
 
 Lihat semua event
 

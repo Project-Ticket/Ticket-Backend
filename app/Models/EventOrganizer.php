@@ -53,6 +53,13 @@ class EventOrganizer extends Model
         'reviewed_at' => 'datetime',
     ];
 
+    protected $hidden = [
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
+        'verification_notes',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -61,5 +68,10 @@ class EventOrganizer extends Model
     public function events()
     {
         return $this->hasMany(Event::class, 'organizer_id', 'id');
+    }
+
+    public function reviewedBy()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }

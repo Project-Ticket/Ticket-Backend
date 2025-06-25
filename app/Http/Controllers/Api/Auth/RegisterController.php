@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\VerifyEmail;
 use App\Services\Status;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,7 +24,7 @@ class RegisterController extends Controller
         $this->user = new User();
     }
 
-    public function register(Request $request)
+    public function register(Request $request): JsonResponse
     {
         DB::beginTransaction();
 
@@ -75,7 +76,7 @@ class RegisterController extends Controller
         }
     }
 
-    public function verifyEmail(Request $request, $id, $hash)
+    public function verifyEmail(Request $request, $id, $hash): JsonResponse
     {
         $user = $this->user->findOrFail($id);
 
@@ -96,7 +97,7 @@ class RegisterController extends Controller
         );
     }
 
-    public function resendVerificationEmail(Request $request)
+    public function resendVerificationEmail(Request $request): JsonResponse
     {
         $user = User::where('email', $request->email)->first();
 

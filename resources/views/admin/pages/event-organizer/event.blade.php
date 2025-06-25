@@ -65,14 +65,14 @@
             <div class="card border-0 shadow-sm bg-info text-white">
                 <div class="card-body text-center">
                     <i class="fas fa-chart-line fs-2 mb-2"></i>
-                    {{-- <h3 class="mb-1">{{ $totalParticipants }}</h3> --}}
+                    <h3 class="mb-1">{{ $totalParticipants }}</h3>
                     <small>Total Peserta</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Organizer Quick Info -->
+    <!-- Organizer Quick Info (unchanged) -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -169,7 +169,6 @@
                         </thead>
                         <tbody>
                             @foreach ($events as $index => $event)
-                                {{-- @dd($event) --}}
                                 <tr>
                                     <td class="text-muted">
                                         {{ ($events->currentPage() - 1) * $events->perPage() + $index + 1 }}
@@ -178,9 +177,8 @@
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
                                                 @if ($event->banner_image)
-                                                    <img src="{{ asset('storage/' . $event->banner_image) }}"
-                                                        alt="Event Banner" class="rounded"
-                                                        style="width: 60px; height: 40px; object-fit: cover;">
+                                                    <img src="{{ asset('storage/' . $event->banner_image) }}" alt="Event Banner"
+                                                        class="rounded" style="width: 60px; height: 40px; object-fit: cover;">
                                                 @else
                                                     <div class="bg-light rounded d-flex align-items-center justify-content-center"
                                                         style="width: 60px; height: 40px;">
@@ -196,7 +194,7 @@
                                                 </h6>
                                                 <small class="text-muted">
                                                     <i class="fas fa-map-marker-alt me-1"></i>
-                                                    {{ $event->location ?? 'Online' }}
+                                                    {{ $event->venue_name ?? 'Online' }}
                                                 </small>
                                                 @if ($event->category)
                                                     <span
@@ -208,28 +206,28 @@
                                     <td>
                                         <div class="text-center">
                                             <strong
-                                                class="d-block">{{ $event->start_date ? \Carbon\Carbon::parse($event->start_date)->format('d M') : '-' }}</strong>
+                                                class="d-block">{{ $event->start_datetime ? \Carbon\Carbon::parse($event->start_datetime)->format('d M') : '-' }}</strong>
                                             <small
-                                                class="text-muted">{{ $event->start_date ? \Carbon\Carbon::parse($event->start_date)->format('Y') : '' }}</small>
-                                            @if ($event->start_time)
+                                                class="text-muted">{{ $event->start_datetime ? \Carbon\Carbon::parse($event->start_datetime)->format('Y') : '' }}</small>
+                                            @if ($event->start_datetime)
                                                 <small
-                                                    class="d-block text-muted">{{ \Carbon\Carbon::parse($event->start_time)->format('H:i') }}</small>
+                                                    class="d-block text-muted">{{ \Carbon\Carbon::parse($event->start_datetime)->format('H:i') }}</small>
                                             @endif
                                         </div>
                                     </td>
                                     <td class="text-center">
                                         <div>
                                             <strong class="d-block">{{ $event->registrations_count ?? 0 }}</strong>
-                                            @if ($event->max_participants)
-                                                <small class="text-muted">/ {{ $event->max_participants }}</small>
+                                            @php
+                                                $maxParticipants = $event->ticketTypes->sum('quantity');
+                                            @endphp
+                                            @if ($maxParticipants > 0)
+                                                <small class="text-muted">/ {{ $maxParticipants }}</small>
                                                 <div class="progress mt-1" style="height: 3px;">
                                                     @php
-                                                        $percentage =
-                                                            $event->max_participants > 0
-                                                                ? (($event->registrations_count ?? 0) /
-                                                                        $event->max_participants) *
-                                                                    100
-                                                                : 0;
+                                                        $percentage = $maxParticipants > 0
+                                                            ? (($event->registrations_count ?? 0) / $maxParticipants) * 100
+                                                            : 0;
                                                     @endphp
                                                     <div class="progress-bar bg-{{ $percentage >= 90 ? 'danger' : ($percentage >= 70 ? 'warning' : 'success') }}"
                                                         style="width: {{ min($percentage, 100) }}%"></div>
@@ -240,22 +238,33 @@
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        @if ($event->is_free)
+                                        @php
+                                            $ticket = $event->ticketTypes->first();
+                                            $isFree = $ticket && $ticket->price == 0;
+                                        @endphp
+                                        @if ($isFree)
                                             <span class="badge bg-success">GRATIS</span>
                                         @else
-                                            <strong
-                                                class="d-block">Rp{{ number_format($event->price ?? 0, 0, ',', '.') }}</strong>
-                                            @if ($event->early_bird_price && $event->early_bird_deadline && now() < $event->early_bird_deadline)
+                                            @if ($ticket)
+                                                <strong class="d-block">Rp{{ number_format($ticket->price, 0, ',', '.') }}</strong>
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
+                                            <!-- Add early bird logic if applicable -->
+                                            @if ($ticket && $ticket->benefits && isset(json_decode($ticket->benefits)->early_bird_price) && now() < $ticket->sale_end)
+                                                @php
+                                                    $earlyBirdPrice = json_decode($ticket->benefits)->early_bird_price;
+                                                @endphp
                                                 <small class="text-success">Early Bird:
-                                                    Rp{{ number_format($event->early_bird_price, 0, ',', '.') }}</small>
+                                                    Rp{{ number_format($earlyBirdPrice, 0, ',', '.') }}</small>
                                             @endif
                                         @endif
                                     </td>
                                     <td>
                                         @php
                                             $statusConfig = [
-                                                'draft' => ['bg-secondary', 'Draft'],
-                                                'published' => ['bg-success', 'Published'],
+                                                1 => ['bg-secondary', 'Draft'],
+                                                2 => ['bg-success', 'Published'],
                                                 'active' => ['bg-primary', 'Aktif'],
                                                 'completed' => ['bg-info', 'Selesai'],
                                                 'cancelled' => ['bg-danger', 'Dibatalkan'],
@@ -268,49 +277,17 @@
                                         <span class="badge {{ $config[0] }}">{{ $config[1] }}</span>
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <a href="#" class="btn btn-outline-primary" title="Lihat Detail">
+                                        <div class="btn-group">
+                                            <button class="btn btn-outline-primary open-global-modal"
+                                                data-url="{{ route('event-organizer.show-event-details', $event->id) }}"
+                                                data-title="Lihat Detail Event">
                                                 <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="#" class="btn btn-outline-info" title="Lihat Peserta">
+                                            </button>
+                                            <button class="btn btn-outline-info open-global-modal"
+                                                data-url="{{ route('event-organizer.show-participants', $event->id) }}"
+                                                data-title="Lihat Detail Peserta">
                                                 <i class="fas fa-users"></i>
-                                            </a>
-                                            <div class="dropdown">
-                                                <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                                                    data-bs-toggle="dropdown">
-                                                    <i class="fas fa-ellipsis-v"></i>
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="#">
-                                                            <i class="fas fa-edit me-2"></i>Edit Event
-                                                        </a></li>
-                                                    <li><a class="dropdown-item" href="#">
-                                                            <i class="fas fa-copy me-2"></i>Duplikat
-                                                        </a></li>
-                                                    <li>
-                                                        <hr class="dropdown-divider">
-                                                    </li>
-                                                    <li><a class="dropdown-item" href="#">
-                                                            <i class="fas fa-chart-bar me-2"></i>Statistik
-                                                        </a></li>
-                                                    <li><a class="dropdown-item" href="#">
-                                                            <i class="fas fa-download me-2"></i>Export Data
-                                                        </a></li>
-                                                    <li>
-                                                        <hr class="dropdown-divider">
-                                                    </li>
-                                                    @if ($event->status == 'active')
-                                                        <li><a class="dropdown-item text-warning" href="#">
-                                                                <i class="fas fa-pause me-2"></i>Pause Event
-                                                            </a></li>
-                                                    @endif
-                                                    @if ($event->status != 'cancelled')
-                                                        <li><a class="dropdown-item text-danger" href="#">
-                                                                <i class="fas fa-ban me-2"></i>Cancel Event
-                                                            </a></li>
-                                                    @endif
-                                                </ul>
-                                            </div>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -341,8 +318,7 @@
                     <h5 class="text-muted mb-2">Belum Ada Events</h5>
                     <p class="text-muted mb-3">Event organizer ini belum memiliki event yang terdaftar.</p>
                     @if (request('search') || request('status') != 'all')
-                        <a href="{{ route('event-organizer.events', $organizer->uuid) }}"
-                            class="btn btn-outline-primary">
+                        <a href="{{ route('event-organizer.events', $organizer->uuid) }}" class="btn btn-outline-primary">
                             <i class="fas fa-refresh me-1"></i> Reset Filter
                         </a>
                     @endif
@@ -351,7 +327,7 @@
         </div>
     </div>
 
-    <!-- Recent Activity (Optional) -->
+    <!-- Recent Activity -->
     @if ($events->count() > 0)
         <div class="row mt-4">
             <div class="col-12">
@@ -368,9 +344,8 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="card border h-100">
                                         @if ($event->banner_image)
-                                            <img src="{{ asset('storage/' . $event->banner_image) }}"
-                                                class="card-img-top" style="height: 150px; object-fit: cover;"
-                                                alt="Event Banner">
+                                            <img src="{{ asset('storage/' . $event->banner_image) }}" class="card-img-top"
+                                                style="height: 150px; object-fit: cover;" alt="Event Banner">
                                         @else
                                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
                                                 style="height: 150px;">
@@ -382,10 +357,9 @@
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <small class="text-muted">
                                                     <i class="fas fa-calendar me-1"></i>
-                                                    {{ $event->start_date ? \Carbon\Carbon::parse($event->start_date)->format('d M Y') : '-' }}
+                                                    {{ $event->start_datetime ? \Carbon\Carbon::parse($event->start_datetime)->format('d M Y') : '-' }}
                                                 </small>
-                                                <span
-                                                    class="badge bg-{{ $statusConfig[$event->status][0] ?? 'dark' }} badge-sm">
+                                                <span class="badge bg-{{ $statusConfig[$event->status][0] ?? 'dark' }} badge-sm">
                                                     {{ $statusConfig[$event->status][1] ?? ucfirst($event->status) }}
                                                 </span>
                                             </div>
@@ -394,8 +368,12 @@
                                                     <i class="fas fa-users me-1"></i>
                                                     {{ $event->registrations_count ?? 0 }} peserta
                                                 </small>
-                                                <small class="fw-bold text-{{ $event->is_free ? 'success' : 'primary' }}">
-                                                    {{ $event->is_free ? 'GRATIS' : 'Rp' . number_format($event->price ?? 0, 0, ',', '.') }}
+                                                @php
+                                                    $ticket = $event->ticketTypes->first();
+                                                    $isFree = $ticket && $ticket->price == 0;
+                                                @endphp
+                                                <small class="fw-bold text-{{ $isFree ? 'success' : 'primary' }}">
+                                                    {{ $isFree ? 'GRATIS' : ($ticket ? 'Rp' . number_format($ticket->price, 0, ',', '.') : 'N/A') }}
                                                 </small>
                                             </div>
                                         </div>
@@ -413,13 +391,13 @@
 @push('scripts')
     <script>
         // Auto refresh every 5 minutes for real-time updates
-        setTimeout(function() {
+        setTimeout(function () {
             location.reload();
         }, 300000);
 
         // Tooltip initialization
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
     </script>

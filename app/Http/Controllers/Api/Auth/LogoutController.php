@@ -4,17 +4,29 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Facades\MessageResponseJson;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class LogoutController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): JsonResponse
     {
         DB::beginTransaction();
 
         try {
-            $request->user()->currentAccessToken()->delete();
+            $token = $request->cookie('auth_token');
+
+            if ($token) {
+                $tokenData = PersonalAccessToken::findToken($token);
+                if ($tokenData) {
+                    $tokenData->delete();
+                }
+            }
+
+            Cookie::queue(Cookie::forget('auth_token'));
 
             DB::commit();
 

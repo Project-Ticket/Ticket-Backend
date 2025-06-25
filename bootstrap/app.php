@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'rest/api'
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->redirectGuestsTo('rest/api/auth/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

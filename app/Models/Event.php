@@ -62,6 +62,11 @@ class Event extends Model
     }
     public function registrations()
     {
-        return $this->hasMany(TicketType::class, 'event_id', 'id');
+        return $this->hasManyThrough(Ticket::class, TicketType::class, 'event_id', 'ticket_type_id');
+    }
+
+    public function ticketTypes()
+    {
+        return $this->hasMany(TicketType::class);
     }
 }

@@ -30,14 +30,15 @@ return [
         1 => 'PENDING',
         2 => 'PAID',
         3 => 'CANCELLED',
-        4 => 'REFUNDED',
-        5 => 'EXPIRED',
+        4 => 'EXPIRED',
     ],
     'ticketStatus' => [
-        1 => "ACTIVE",
-        2 => "USED",
-        3 => "CANCELLED",
-        4 => "TRANSFERRED",
+        0 => "INACTIVE",
+        1 => "PENDING PAYMENT",
+        2 => "ACTIVE",
+        3 => "USED",
+        4 => "CANCELLED",
+        5 => "TRANSFERRED",
     ],
     'merchandiseOrderStatus' => [
         1 => "PENDING",
@@ -46,7 +47,6 @@ return [
         4 => "SHIPPED",
         5 => "DELIVERED",
         6 => "CANCELLED",
-        7 => "REFUNDED",
-        8 => "TIP", //TAKE IT PLACE
+        7 => "TIP", //TAKE IT PLACE
     ],
 ];

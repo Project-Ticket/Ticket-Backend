@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Facades\MessageResponseJson;
 use App\Http\Controllers\Controller;
+use App\Models\Event;
 use App\Models\EventOrganizer;
 use App\Models\User;
 use App\Services\Status;
@@ -67,20 +68,6 @@ class EventOragnizerController extends Controller
             ->make(true);
     }
 
-    public function markUnderReview($uuid)
-    {
-        $organizer = EventOrganizer::where('uuid', $uuid)->firstOrFail();
-
-        if ($organizer->application_status === 'pending') {
-            $organizer->application_status = 'under_review';
-            $organizer->reviewed_by = Auth::user()->id;
-            $organizer->reviewed_at = now();
-            $organizer->save();
-        }
-
-        return response()->json(['success' => true]);
-    }
-
     public function show($uuid)
     {
         $organizer = EventOrganizer::with(['user'])->where('uuid', $uuid)->firstOrFail();
@@ -95,41 +82,74 @@ class EventOragnizerController extends Controller
         return view('admin.pages.event-organizer.show', compact('organizer'));
     }
 
+    public function destroy($id)
+    {
+        $organizer = EventOrganizer::findOrFail($id);
+        $user = User::findOrFail($organizer->user_id);
+
+        DB::beginTransaction();
+        try {
+            $organizer->delete();
+            $user->delete();
+
+            DB::commit();
+            return MessageResponseJson::success('Event Organizer and associated user deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return MessageResponseJson::serverError('Failed to delete Event Organizer: ' . $e->getMessage());
+        }
+    }
+
+    public function showEventDetails($id)
+    {
+        $event = Event::with(['registrations', 'ticketTypes'])->findOrFail($id);
+        return view('admin.pages.event-organizer.event-detail-modal', compact('event'));
+    }
+
+    public function showParticipants($id)
+    {
+        $event = Event::with('registrations.user')->findOrFail($id);
+        return view('admin.pages.event-organizer.participant-list-modal', compact('event'));
+    }
+
     public function showEvents(Request $request, $uuid)
     {
         $organizer = EventOrganizer::where('uuid', $uuid)
             ->with(['user', 'events' => function ($query) use ($request) {
-                // Apply filters
+                $query->with(['ticketTypes' => function ($q) {
+                    $q->where('is_active', true)->orderBy('sort_order');
+                }, 'category', 'registrations']);
+
                 if ($request->filled('status') && $request->status !== 'all') {
-                    $query->where('status', $request->status);
+                    $query->where('status', Status::event()->getId($request->status));
                 }
 
                 if ($request->filled('search')) {
                     $query->where(function ($q) use ($request) {
                         $q->where('title', 'like', '%' . $request->search . '%')
                             ->orWhere('description', 'like', '%' . $request->search . '%')
-                            ->orWhere('location', 'like', '%' . $request->search . '%');
+                            ->orWhere('venue_name', 'like', '%' . $request->search . '%');
                     });
                 }
 
-                // Order by latest
                 $query->orderBy('created_at', 'desc');
             }])
             ->firstOrFail();
 
-        // Get events with pagination
-        $eventsQuery = $organizer->events();
+        $eventsQuery = $organizer->events()
+            ->with(['ticketTypes' => function ($q) {
+                $q->where('is_active', true)->orderBy('sort_order');
+            }, 'category', 'registrations']);
 
-        // Apply the same filters for pagination
         if ($request->filled('status') && $request->status !== 'all') {
-            $eventsQuery->where('status', $request->status);
+            $eventsQuery->where('status', Status::event()->getId($request->status));
         }
 
         if ($request->filled('search')) {
             $eventsQuery->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
                     ->orWhere('description', 'like', '%' . $request->search . '%')
-                    ->orWhere('location', 'like', '%' . $request->search . '%');
+                    ->orWhere('venue_name', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -137,15 +157,13 @@ class EventOragnizerController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        // Calculate statistics
         $totalEvents = $organizer->events()->count();
-        $activeEvents = $organizer->events()->where('status', 'active')->count();
+        $activeEvents = $organizer->events()->where('status', Status::getId('eventStatus', 'PUBLISHED'))->count();
         $upcomingEvents = $organizer->events()
             ->where('start_datetime', '>', now())
-            ->whereIn('status', ['published', 'active'])
+            ->whereIn('status', [1, 2])
             ->count();
 
-        // Calculate total participants across all events
         $totalParticipants = $organizer->events()
             ->withCount('registrations')
             ->get()
@@ -176,7 +194,7 @@ class EventOragnizerController extends Controller
     public function updateStatus(Request $request, $uuid)
     {
         $request->validate([
-            'status_type'  => 'required|in:application_status,verification_status',
+            'status_type'  => 'required|in:application_status,verification_status,status',
             'status_value' => 'required|string',
             'rejection_reason' => 'required_if:status_value,rejected|string|nullable',
         ]);
@@ -197,14 +215,21 @@ class EventOragnizerController extends Controller
                 $organizer->reviewed_at        = now();
             }
 
-            // Tambahan jika kamu juga ingin meng-handle verification_status
             if ($request->status_type === 'verification_status') {
                 $organizer->verification_status = $request->status_value;
                 $organizer->verification_notes  = $request->status_value === 'rejected' ? $request->rejection_reason : null;
                 $organizer->verified_at         = now();
             }
 
+            $status = (int) $request->status_value;
+            if ($request->status_type === 'status') {
+                $organizer->status = $status;
+            } else {
+                $organizer->status = 0;
+            }
+
             $organizer->save();
+
             DB::commit();
 
             return back()->with('success', 'Status berhasil diperbarui.');
@@ -213,22 +238,17 @@ class EventOragnizerController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memperbarui status.');
         }
     }
-
-    public function destroy($id)
+    public function markUnderReview($uuid)
     {
-        $organizer = EventOrganizer::findOrFail($id);
-        $user = User::findOrFail($organizer->user_id);
+        $organizer = EventOrganizer::where('uuid', $uuid)->firstOrFail();
 
-        DB::beginTransaction();
-        try {
-            $organizer->delete();
-            $user->delete();
-
-            DB::commit();
-            return MessageResponseJson::success('Event Organizer and associated user deleted successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return MessageResponseJson::serverError('Failed to delete Event Organizer: ' . $e->getMessage());
+        if ($organizer->application_status === 'pending') {
+            $organizer->application_status = 'under_review';
+            $organizer->reviewed_by = Auth::user()->id;
+            $organizer->reviewed_at = now();
+            $organizer->save();
         }
+
+        return response()->json(['success' => true]);
     }
 }
