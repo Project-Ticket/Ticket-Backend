@@ -221,11 +221,16 @@ class EventOragnizerController extends Controller
                 $organizer->verified_at         = now();
             }
 
-            $status = (int) $request->status_value;
             if ($request->status_type === 'status') {
+                $status = (int) $request->status_value;
                 $organizer->status = $status;
-            } else {
-                $organizer->status = 0;
+            }
+
+            if ($organizer->verification_status === 'verified' && $organizer->application_status === 'approved') {
+                $user = User::find($organizer->user_id);
+                if ($user) {
+                    $user->syncRoles(['Organizer']);
+                }
             }
 
             $organizer->save();
