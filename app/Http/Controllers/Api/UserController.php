@@ -16,7 +16,7 @@ class UserController extends Controller
 {
     public function updateProfile(Request $request): JsonResponse
     {
-        if (!Auth::user()->hasRole('User')) {
+        if (!Auth::user()->hasRole(['User', 'Organizer'])) {
             return MessageResponseJson::forbidden('Access denied. Only users can update their profile.');
         }
 
@@ -88,7 +88,7 @@ class UserController extends Controller
 
     public function updatePassword(Request $request): JsonResponse
     {
-        if (!Auth::user()->hasRole('User')) {
+        if (!Auth::user()->hasRole(['User', 'Organizer'])) {
             return MessageResponseJson::forbidden('Access denied. Only users can update their password.');
         }
 
@@ -137,7 +137,7 @@ class UserController extends Controller
 
     public function getProfile(): JsonResponse
     {
-        if (!Auth::user()->hasRole('User')) {
+        if (!Auth::user()->hasRole(['User', 'Organizer'])) {
             return MessageResponseJson::forbidden('Access denied. Only users can view their profile.');
         }
 
