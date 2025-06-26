@@ -99,8 +99,8 @@ class EventController extends Controller
             'venue_address'         => 'required_if:type,offline,hybrid|nullable|string',
             'venue_city'            => 'required_if:type,offline,hybrid|nullable|string|max:255',
             'venue_province'        => 'required_if:type,offline,hybrid|nullable|string|max:255',
-            'venue_latitude'        => 'nullable|numeric|between:-90,90',
-            'venue_longitude'       => 'nullable|numeric|between:-180,180',
+            'venue_latitude'        => 'nullable|string',
+            'venue_longitude'       => 'nullable|string',
             'online_platform'       => 'required_if:type,online,hybrid|nullable|string|max:255',
             'online_link'           => 'required_if:type,online,hybrid|nullable|url',
             'start_datetime'        => 'required|date|after:now',
@@ -120,9 +120,6 @@ class EventController extends Controller
         }
 
         try {
-            if (!Auth::user()->hasRole('Organizer')) {
-                return MessageResponseJson::unauthorized("User must be an organizer to create an event.");
-            }
             $organizer = $this->eventOrganizer->findOrFail(Auth::user()->eventOrganizer->id);
 
             if ($organizer->status !== 1 || $organizer->verification_status !== 'verified' || $organizer->application_status !== 'approved') {

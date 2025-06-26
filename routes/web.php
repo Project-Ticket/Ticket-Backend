@@ -12,18 +12,22 @@ use App\Http\Controllers\Web\EventController;
 use App\Http\Controllers\Web\EventOragnizerController;
 use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\UserEventOrganizerController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('login');
 });
 Route::prefix('~admin-panel')->group(function () {
-    Route::get('/login', [LoginController::class, 'index'])->name('login');
-
-    Route::post('/login', [LoginController::class, 'login'])->name('login');
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [LoginController::class, 'index'])->name('login');
+        Route::post('/login', [LoginController::class, 'login'])->name('login');
+    });
 
     Route::middleware('auth')->group(function () {
-
         Route::prefix('user-management')->name('user-management.')->group(function () {
             Route::group(['prefix' => 'user', 'controller' => UserController::class], function () {
                 Route::get('/', 'index')->name('user');
@@ -64,6 +68,8 @@ Route::prefix('~admin-panel')->group(function () {
         Route::group(['prefix' => 'event', 'controller' => EventController::class], function () {
             Route::get('/', 'index')->name('event');
             Route::get('/getData', 'getData')->name('event.getData');
+            Route::get('/{id}/show', 'show')->name('event.show');
+            Route::delete('/destroy/{id}', 'destroy')->name('event.destroy');
         });
 
 

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TicketTypeController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WilayahController;
+use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -54,15 +55,45 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{uuid}/update', 'update');
         Route::get('/{uuid}/show', 'show');
         Route::delete('/{uuid}/delete', 'destroy');
+
+        Route::post('/{uuid}/resubmit-application', 'resubmitApplication');
     });
 
-    Route::group(['prefix' => 'ticket-type', 'controller' => TicketTypeController::class], function () {
-        Route::get('/', 'index');
-        Route::post('/store', 'store');
-        Route::get('/{id}/show', 'show');
-        Route::put('/{id}/update', 'update');
-        Route::delete('/{id}/delete', 'destroy');
-        Route::patch('/{id}/update-status', 'toggleActive');
+    Route::middleware(RoleMiddleware::class)->group(function () {
+
+        Route::group(['prefix' => 'ticket-type', 'controller' => TicketTypeController::class], function () {
+            Route::get('/', 'index');
+            Route::post('/store', 'store');
+            Route::get('/{id}/show', 'show');
+            Route::put('/{id}/update', 'update');
+            Route::delete('/{id}/delete', 'destroy');
+
+            Route::patch('/{id}/update-status', 'toggleActive');
+        });
+
+        Route::group(['prefix' => 'ticket', 'controller' => TicketController::class], function () {
+            Route::get('/', 'index');
+            Route::post('/store', 'store');
+            Route::get('/{id}/show', 'show');
+            Route::put('/{id}/update', 'update');
+            Route::delete('/{id}/delete', 'destroy');
+            Route::patch('/{id}/update-status', 'toggleActive');
+
+            Route::get('/{uuid}/generate-qrcode', 'generateQrCodeImage');
+
+            Route::get('/get-ticket-by-qrcode', 'getTicketFromQrCode');
+
+            Route::post('/use-ticket', 'markTicketAsUsed');
+        });
+
+        Route::group(['prefix' => 'event', 'controller' => EventController::class], function () {
+            Route::get('/', 'index');
+            Route::post('/store', 'store');
+            Route::get('/{slug}', 'show');
+            Route::put('/{slug}/update', 'update');
+            Route::delete('/{slug}/delete', 'destroy');
+            Route::patch('/{slug}/update-status', 'updateStatus');
+        });
     });
 
     Route::group(['prefix' => 'order', 'controller' => OrderController::class], function () {
@@ -80,31 +111,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/calculate-fee', 'calculateFee');
     });
 
-    Route::group(['prefix' => 'ticket', 'controller' => TicketController::class], function () {
-        Route::get('/', 'index');
-        Route::post('/store', 'store');
-        Route::get('/{id}/show', 'show');
-        Route::put('/{id}/update', 'update');
-        Route::delete('/{id}/delete', 'destroy');
-        Route::patch('/{id}/update-status', 'toggleActive');
-
-        Route::get('/{uuid}/generate-qrcode', 'generateQrCodeImage');
-
-        Route::get('/get-ticket-by-qrcode', 'getTicketFromQrCode');
-
-        Route::post('/use-ticket', 'markTicketAsUsed');
-    });
-
     Route::get('/category', [CategoryController::class, 'index']);
-
-    Route::group(['prefix' => 'event', 'controller' => EventController::class], function () {
-        Route::get('/', 'index');
-        Route::post('/store', 'store');
-        Route::get('/{slug}', 'show');
-        Route::put('/{slug}/update', 'update');
-        Route::delete('/{slug}/delete', 'destroy');
-        Route::patch('/{slug}/update-status', 'updateStatus');
-    });
 
     Route::post('/logout', LogoutController::class);
 });

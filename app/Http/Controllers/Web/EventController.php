@@ -27,21 +27,21 @@ class EventController extends Controller
         return DataTables::of($events)
             ->addIndexColumn()
             ->addColumn('organizer_name', function ($row) {
-                return optional($row->organizer)->organization_name ?? '-'; // Mengambil organizer_name
+                return optional($row->organizer)->organization_name ?? '-';
             })
             ->editColumn('start_datetime', fn($row) => $row->start_datetime->format('d M Y H:i'))
             ->editColumn('end_datetime', fn($row) => $row->end_datetime->format('d M Y H:i'))
-            ->editColumn('status', fn($row) => $row->is_featured ? '<span class="badge bg-success">Featured</span>' : '<span class="badge bg-secondary">Regular</span>')
+            ->editColumn('status', function ($row) {
+                // Gunakan Status helper untuk mendapatkan badge
+                return Status::getBadgeHtml('eventStatus', $row->status);
+            })
             ->addColumn('action', function ($row) {
                 return '
-                <div class="d-flex justify-content-center gap-1">
-                    <a href="' . url('events.show', $row->id) . '" class="btn btn-info" title="Lihat">
-                        <i class="fas fa-eye"></i>
-                    </a>
-                    <button class="btn btn-danger btn-global-delete" data-url="' . url('events.destroy', $row->id) . '" title="Hapus">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>';
+            <div class="d-flex justify-content-center gap-1">
+                <a href="' . route('event.show', $row->id) . '" class="btn btn-info" title="Lihat">
+                    <i class="fas fa-eye"></i>
+                </a>
+            </div>';
             })
             ->rawColumns(['status', 'action'])
             ->make(true);
@@ -50,10 +50,9 @@ class EventController extends Controller
     public function show($id)
     {
         $event = Event::with(['organizer', 'category'])->findOrFail($id);
-        return view('admin.pages.events.show', compact('event'));
+        return view('admin.pages.event.show', compact('event'));
     }
 
-    // Menghapus event
     public function destroy($id)
     {
         $event = Event::findOrFail($id);

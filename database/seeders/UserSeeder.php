@@ -26,11 +26,11 @@ class UserSeeder extends Seeder
         ]);
         $admin->assignRole('Admin');
 
-        $organizer = User::factory()->create([
-            'name' => 'Organizer',
-            'email' => 'organizer@mailinator.com',
-        ]);
-        $organizer->assignRole('Organizer');
+        // $organizer = User::factory()->create([
+        //     'name' => 'Organizer',
+        //     'email' => 'organizer@mailinator.com',
+        // ]);
+        // $organizer->assignRole('Organizer');
 
         $user = User::factory()->create([
             'name' => 'User',

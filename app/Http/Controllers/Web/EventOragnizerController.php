@@ -29,7 +29,7 @@ class EventOragnizerController extends Controller
             return response()->json(['message' => 'Invalid request'], 400);
         }
 
-        $organizers = EventOrganizer::with('user')->select('event_organizers.*');
+        $organizers = EventOrganizer::with(['user', 'events'])->select('event_organizers.*');
 
         return DataTables::of($organizers)
             ->addIndexColumn()
@@ -53,15 +53,27 @@ class EventOragnizerController extends Controller
             })
             ->editColumn('created_at', fn($row) => $row->created_at->format('d M Y'))
             ->addColumn('action', function ($row) {
-                return '
+                $eventCount = $row->events->count();
+
+                if ($eventCount === 0) {
+                    return '
                 <div class="d-flex justify-content-center gap-1">
-                    <a href="' . route('event-organizer.show-events', $row->uuid) . '" class="btn btn-info" title="Lihat Events">
-                        <i class="fas fa-list"></i>
-                    </a>
                     <button class="btn btn-danger btn-global-delete" data-url="' . route('event-organizer.destroy', $row->id) . '" title="Hapus">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </div>
+                ';
+                }
+
+                return '
+            <div class="d-flex justify-content-center gap-1">
+                <a href="' . route('event-organizer.show-events', $row->uuid) . '" class="btn btn-info" title="Lihat Events">
+                    <i class="fas fa-list"></i>
+                </a>
+                <button class="btn btn-danger btn-global-delete" data-url="' . route('event-organizer.destroy', $row->id) . '" title="Hapus">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
             ';
             })
             ->rawColumns(['organization_name', 'status', 'verification_status', 'action'])
@@ -136,6 +148,12 @@ class EventOragnizerController extends Controller
             }])
             ->firstOrFail();
 
+        $totalEvents = $organizer->events()->count();
+
+        if ($totalEvents === 0) {
+            return redirect()->back()->with('warning', 'Event organizer belum memiliki event');
+        }
+
         $eventsQuery = $organizer->events()
             ->with(['ticketTypes' => function ($q) {
                 $q->where('is_active', true)->orderBy('sort_order');
@@ -157,7 +175,6 @@ class EventOragnizerController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        $totalEvents = $organizer->events()->count();
         $activeEvents = $organizer->events()->where('status', Status::getId('eventStatus', 'PUBLISHED'))->count();
         $upcomingEvents = $organizer->events()
             ->where('start_datetime', '>', now())

@@ -104,6 +104,15 @@
             });
         </script>
     @endif
+    @if (session('warning'))
+        <script type="text/javascript">
+            Swal.fire({
+                title: "Berhasil",
+                text: "{{ session('warning') }}",
+                icon: "warning"
+            });
+        </script>
+    @endif
     @if (session('error'))
         <script type="text/javascript">
             Swal.fire({

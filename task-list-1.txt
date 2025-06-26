@@ -27,9 +27,9 @@ Lihat semua event dari semua EO (done)
 
 # Event Management
 
-Lihat semua event
+Lihat semua event (done)
 
-Hapus event yang bermasalah (spam, ilegal, dll)
+Hapus event yang bermasalah (spam, ilegal, dll) (done)
 
 Publish/unpublish event
 

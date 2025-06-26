@@ -74,9 +74,13 @@ class EventOrganizerController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if (!Auth::user()->hasRole('User')) {
-            return MessageResponseJson::forbidden(
-                'Only users with "User" role can register as Event Organizer'
+        $user = Auth::user();
+        $profileIncomplete = $this->checkProfileCompleteness($user);
+
+        if ($profileIncomplete) {
+            return MessageResponseJson::badRequest(
+                'Please complete your profile before registering as an Event Organizer',
+                $profileIncomplete
             );
         }
 
@@ -145,8 +149,28 @@ class EventOrganizerController extends Controller
 
             $uploadedDocuments = [];
             if ($request->hasFile('uploaded_documents')) {
+                $user = Auth::user();
+
+                $userIdentifier = Str::before($user->email, '@');
+
                 foreach ($request->file('uploaded_documents') as $file) {
-                    $uploadedDocuments[] = $file->store('event-organizers/documents', 'public');
+                    $originalName = $file->getClientOriginalName();
+
+                    $fileName = pathinfo($originalName, PATHINFO_FILENAME)
+                        . '_'
+                        . $userIdentifier
+                        . '_'
+                        . now()->format('YmdHis')
+                        . '.'
+                        . $file->getClientOriginalExtension();
+
+                    $path = $file->storeAs(
+                        'event-organizers/documents',
+                        $fileName,
+                        'public'
+                    );
+
+                    $uploadedDocuments[] = $path;
                 }
             }
 
@@ -406,6 +430,155 @@ class EventOrganizerController extends Controller
         }
     }
 
+    public function resubmitApplication(Request $request, string $uuid): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'organization_name'         => 'required|string|max:255',
+            'description'               => 'nullable|string|max:5000',
+            'logo'                      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'banner'                    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'website'                   => 'nullable|url|max:255',
+            'instagram'                 => 'nullable|url|max:255',
+            'twitter'                   => 'nullable|url|max:255',
+            'facebook'                  => 'nullable|url|max:255',
+            'address'                   => 'required|string|max:500',
+            'city'                      => 'required|string|max:100',
+            'province'                  => 'required|string|max:100',
+            'postal_code'               => 'required|string|max:10',
+            'contact_person'            => 'required|string|max:100',
+            'contact_phone'             => 'required|string|max:20|regex:/^[0-9+\-\s()]+$/',
+            'contact_email'             => 'required|email|max:255',
+            'bank_name'                 => 'nullable|string|max:100',
+            'bank_account_number'       => 'nullable|string|max:50',
+            'bank_account_name'         => 'nullable|string|max:100',
+            'application_fee'           => 'nullable|numeric|min:0',
+            'security_deposit'          => 'nullable|numeric|min:0',
+            'required_documents'        => 'nullable|array',
+            'required_documents.*'      => 'string|max:255',
+            'uploaded_documents'        => 'nullable|array',
+            'uploaded_documents.*'      => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+            'rejection_reason_response' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return MessageResponseJson::validationError(
+                'Validation failed',
+                $validator->errors()->toArray()
+            );
+        }
+
+        DB::beginTransaction();
+        try {
+            $eventOrganizer = $this->eventOrganizer
+                ->where('uuid', $uuid)
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if (!$eventOrganizer) {
+                return MessageResponseJson::notFound(
+                    'Event organizer not found or unauthorized'
+                );
+            }
+
+            if ($eventOrganizer->application_status !== 'rejected') {
+                return MessageResponseJson::forbidden(
+                    'You can only resubmit a rejected application'
+                );
+            }
+
+            $updateData = [
+                'organization_name'       => $request->organization_name,
+                'description'             => $request->description,
+                'website'                 => $request->website,
+                'instagram'               => $request->instagram,
+                'twitter'                 => $request->twitter,
+                'facebook'                => $request->facebook,
+                'address'                 => $request->address,
+                'city'                    => $request->city,
+                'province'                => $request->province,
+                'postal_code'             => $request->postal_code,
+                'contact_person'          => $request->contact_person,
+                'contact_phone'           => $request->contact_phone,
+                'contact_email'           => $request->contact_email,
+                'bank_name'               => $request->bank_name,
+                'bank_account_number'     => $request->bank_account_number,
+                'bank_account_name'       => $request->bank_account_name,
+                'application_fee'         => $request->application_fee,
+                'security_deposit'        => $request->security_deposit,
+                'required_documents'      => $request->required_documents ? json_encode($request->required_documents) : null,
+
+                // Reset status
+                'application_status'      => 'pending',
+                'verification_status'     => 'pending',
+                'rejection_reason'        => null,
+                'reviewed_by'             => null,
+                'reviewed_at'             => null,
+                'application_submitted_at' => now(),
+            ];
+
+            if ($request->hasFile('logo')) {
+                if ($eventOrganizer->logo) {
+                    Storage::disk('public')->delete($eventOrganizer->logo);
+                }
+                $updateData['logo'] = $request->file('logo')->store('event-organizers/logos', 'public');
+            }
+
+            if ($request->hasFile('banner')) {
+                if ($eventOrganizer->banner) {
+                    Storage::disk('public')->delete($eventOrganizer->banner);
+                }
+                $updateData['banner'] = $request->file('banner')->store('event-organizers/banners', 'public');
+            }
+
+            $uploadedDocuments = json_decode($eventOrganizer->uploaded_documents, true) ?? [];
+            if ($request->hasFile('uploaded_documents')) {
+                // Hapus dokumen lama
+                foreach ($uploadedDocuments as $oldDoc) {
+                    Storage::disk('public')->delete($oldDoc);
+                }
+
+                $uploadedDocuments = [];
+                foreach ($request->file('uploaded_documents') as $file) {
+                    $uploadedDocuments[] = $file->store('event-organizers/documents', 'public');
+                }
+                $updateData['uploaded_documents'] = json_encode($uploadedDocuments);
+            }
+
+            if ($request->filled('rejection_reason_response')) {
+                $updateData['rejection_reason_response'] = $request->rejection_reason_response;
+            }
+
+            $eventOrganizer->update($updateData);
+
+            DB::commit();
+
+            return MessageResponseJson::success(
+                'Event organizer application resubmitted successfully',
+                $eventOrganizer->fresh()->load('user:id,name,email')
+            );
+        } catch (\Throwable $th) {
+            DB::rollBack();
+
+            if (isset($updateData['logo'])) {
+                Storage::disk('public')->delete($updateData['logo']);
+            }
+            if (isset($updateData['banner'])) {
+                Storage::disk('public')->delete($updateData['banner']);
+            }
+            if (isset($updateData['uploaded_documents'])) {
+                $newDocs = json_decode($updateData['uploaded_documents'], true);
+                foreach ($newDocs as $doc) {
+                    Storage::disk('public')->delete($doc);
+                }
+            }
+
+            return MessageResponseJson::serverError(
+                'Failed to resubmit event organizer application',
+                ['error' => $th->getMessage()]
+            );
+        }
+    }
+
     public function getBySlug(string $slug): JsonResponse
     {
         try {
@@ -476,5 +649,28 @@ class EventOrganizerController extends Controller
                 ['error' => $th->getMessage()]
             );
         }
+    }
+
+    private function checkProfileCompleteness($user): ?array
+    {
+        $incompleteFields = [];
+
+        $requiredFields = [
+            'phone' => 'Phone number',
+            'birth_date' => 'Birth date',
+            'gender' => 'Gender',
+            'address' => 'Address',
+            'city' => 'City',
+            'province' => 'Province',
+            'postal_code' => 'Postal code',
+        ];
+
+        foreach ($requiredFields as $field => $label) {
+            if (empty($user->$field)) {
+                $incompleteFields[] = $label;
+            }
+        }
+
+        return $incompleteFields ? $incompleteFields : null;
     }
 }
