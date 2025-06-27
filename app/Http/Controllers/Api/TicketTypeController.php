@@ -113,7 +113,7 @@ class TicketTypeController extends Controller
 
             $data = $request->except('benefits');
             $data['benefits'] = $request->benefits ? json_encode($request->benefits) : null;
-            $data['sold_quantity'] = 0;
+            $data['sold_quantity'] = $request->quantity;
             $data['is_active'] = $request->boolean('is_active', true);
             $data['sort_order'] = $request->get('sort_order', 0);
 

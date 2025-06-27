@@ -174,7 +174,6 @@ class OrderController extends Controller
             $orderNumber = $this->generateUniqueOrderNumber();
 
             $order = $this->order->create([
-                'uuid' => Str::uuid(),
                 'order_number' => $orderNumber,
                 'user_id' => $user->id,
                 'event_id' => $request->event_id,
