@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TicketTypeController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WhistlistController;
 use App\Http\Controllers\Api\WilayahController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Http\Request;
@@ -104,6 +105,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{uuid}/cancel', 'cancel');
         Route::get('/my-order', 'myOrders');
         Route::get('/statistic', 'statistics');
+    });
+
+    Route::group(['prefix' => 'whistlist', 'controller' => WhistlistController::class], function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::delete('/{id}/delete', 'destroy');
     });
 
     Route::group(['prefix' => 'payment-method', 'controller' => PaymentMethodController::class], function () {
