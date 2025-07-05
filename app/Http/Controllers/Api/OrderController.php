@@ -9,36 +9,33 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Ticket;
 use App\Models\TicketType;
-use App\Rules\ValidateStatus;
 use App\Services\PaymentService;
 use App\Services\Status;
-use GuzzleHttp\Promise\Create;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Xendit\Configuration;
-use Xendit\Invoice\CreateInvoiceRequest;
-use Xendit\Xendit;
-use Xendit\Invoice\InvoiceApi;
-use Xendit\PaymentRequest\PaymentRequestApi;
-use Xendit\PaymentRequest\PaymentRequestParameters;
+use App\Contracts\PaymentProviderInterface;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class OrderController extends Controller
 {
-    protected $order, $orderItem, $event, $ticketType, $ticket, $paymentService;
+    protected $order, $orderItem, $event, $ticketType, $ticket, $paymentService, $paymentProvider;
 
-    public function __construct()
-    {
+    public function __construct(
+        PaymentService $paymentService,
+        PaymentProviderInterface $paymentProvider
+    ) {
         $this->order = new Order();
         $this->orderItem = new OrderItem();
         $this->event = new Event();
         $this->ticketType = new TicketType();
         $this->ticket = new Ticket();
-        $this->paymentService = new PaymentService();
+        $this->paymentService = $paymentService;
+        $this->paymentProvider = $paymentProvider;
     }
 
     public function index(Request $request): JsonResponse
@@ -172,9 +169,7 @@ class OrderController extends Controller
             }
 
             $orderNumber = $this->generateUniqueOrderNumber();
-
             $order = $this->order->create([
-                'uuid' => Str::uuid(),
                 'order_number' => $orderNumber,
                 'user_id' => $user->id,
                 'event_id' => $request->event_id,
@@ -225,7 +220,20 @@ class OrderController extends Controller
             try {
                 $order->load(['user', 'event']);
 
-                $invoiceResult = $this->paymentService->createXenditInvoice($order, [$request->payment_method]);
+                $invoiceData = [
+                    'external_id' => $order->order_number,
+                    'amount' => $order->total_amount,
+                    'description' => "Payment for {$order->event->title} - Order #{$order->order_number}",
+                    'invoice_duration' => 86400,
+                    'currency' => 'IDR',
+                    'customer' => [
+                        'given_names' => $order->user->name,
+                        'email' => $order->user->email,
+                    ],
+                    'payment_methods' => [$request->payment_method],
+                ];
+
+                $invoiceResult = $this->paymentProvider->createInvoice($invoiceData);
 
                 $order->update([
                     'payment_reference' => $invoiceResult['id'],
@@ -498,63 +506,6 @@ class OrderController extends Controller
             return MessageResponseJson::success('Order statistics retrieved successfully', $stats);
         } catch (\Throwable $th) {
             return MessageResponseJson::serverError('Failed to retrieve statistics', [$th->getMessage()]);
-        }
-    }
-
-    public function webhook(Request $request): JsonResponse
-    {
-        // Verify webhook signature
-        $webhookToken = config('services.xendit.webhook_token');
-        $signature = $request->header('x-callback-token');
-
-        if ($signature !== $webhookToken) {
-            return MessageResponseJson::forbidden('Invalid webhook signature');
-        }
-
-        $payload = $request->all();
-
-        try {
-            DB::beginTransaction();
-
-            // Find order by payment reference (invoice ID)
-            $order = $this->order->where('payment_reference', $payload['id'])->first();
-
-            if (!$order) {
-                return MessageResponseJson::notFound('Order not found for this payment reference');
-            }
-
-            // Handle different invoice statuses
-            if ($payload['status'] === 'PAID') {
-                $order->update([
-                    'payment_status' => 'paid',
-                    'paid_at' => now(),
-                    'status' => Status::getId('orderStatus', 'PAID'), // Confirmed status
-                ]);
-
-                // Activate tickets
-                $order->tickets()->update(['status' => Status::getId('ticketStatus', 'ACTIVE')]);
-            } elseif (in_array($payload['status'], ['EXPIRED', 'FAILED'])) {
-                $order->update([
-                    'payment_status' => 'failed',
-                    'status' => Status::getId('orderStatus', 'CANCELLED'), // Cancelled status
-                ]);
-
-                // Revert sold quantities
-                foreach ($order->orderItems as $item) {
-                    $this->ticketType->find($item->ticket_type_id)
-                        ->decrement('sold_quantity', $item->quantity);
-                }
-
-                // Deactivate tickets
-                $order->tickets()->update(['status' => Status::getId('ticketStatus', 'INACTIVE')]);
-            }
-
-            DB::commit();
-
-            return MessageResponseJson::success('Webhook processed successfully');
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            return MessageResponseJson::serverError('Failed to process webhook', [$th->getMessage()]);
         }
     }
 

@@ -7,14 +7,10 @@ return [
         3 => 'SUSPENDED',
     ],
     'eventOrganizerStatus' => [
-        1 => 'ACTIVE',
-        2 => 'INACTIVE',
-        3 => 'SUSPENDED',
-    ],
-    'eventOrganizerVerificationStatus' => [
         1 => 'PENDING',
-        2 => 'VERIFIED',
-        3 => 'REJECTED',
+        2 => 'ACTIVE',
+        3 => 'INACTIVE',
+        4 => 'SUSPENDED',
     ],
     'categoryStatus' => [
         1 => 'ACTIVE',

@@ -41,6 +41,10 @@ return new class extends Migration
             $table->enum('application_status', ['pending', 'under_review', 'approved', 'rejected'])->default('pending')
                 ->comment('Status pengajuan EO untuk aktif menjadi penyelenggara event');;
             $table->decimal('application_fee', 12, 2)->nullable();
+            $table->string('payment_reference')->nullable()->comment('Referensi pembayaran dari payment gateway');
+            $table->string('payment_method')->nullable()->comment('Metode pembayaran');
+            $table->string('payment_status')->nullable()->default('unpaid')->comment('Status pembayaran');
+            $table->timestamp('paid_at')->nullable();
             $table->decimal('security_deposit', 12, 2)->nullable();
             $table->json('required_documents')->nullable();
             $table->json('uploaded_documents')->nullable();
@@ -48,8 +52,7 @@ return new class extends Migration
             $table->datetime('application_submitted_at')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users');
             $table->datetime('reviewed_at')->nullable();
-            $table->integer('status')->default(1)
-                ->comment('Status aktif/nonaktif data EO, 1 = aktif, 0 = nonaktif');;
+            $table->integer('status')->default(1)->comment('Status aktif/nonaktif data EO, 1 = aktif, 0 = nonaktif');;
             $table->timestamps();
         });
     }

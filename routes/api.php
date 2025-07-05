@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TicketTypeController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WilayahController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ Route::group(['prefix' => 'ticket-type', 'controller' => TicketTypeController::c
     Route::get('/{eventId}/available', 'getAvailable');
 });
 
-Route::post('/webhook', [OrderController::class, 'webhook']);
+Route::post('/webhook', [WebhookController::class, 'webhook']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -57,44 +58,45 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{uuid}/delete', 'destroy');
 
         Route::post('/{uuid}/resubmit-application', 'resubmitApplication');
+        Route::post('/{uuid}/regenerate-payment-invoice', 'regeneratePaymentInvoice');
     });
 
-    Route::middleware(RoleMiddleware::class)->group(function () {
+    // Route::middleware(RoleMiddleware::class)->group(function () {
 
-        Route::group(['prefix' => 'ticket-type', 'controller' => TicketTypeController::class], function () {
-            Route::get('/', 'index');
-            Route::post('/store', 'store');
-            Route::get('/{id}/show', 'show');
-            Route::put('/{id}/update', 'update');
-            Route::delete('/{id}/delete', 'destroy');
+    Route::group(['prefix' => 'ticket-type', 'controller' => TicketTypeController::class], function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::get('/{id}/show', 'show');
+        Route::put('/{id}/update', 'update');
+        Route::delete('/{id}/delete', 'destroy');
 
-            Route::patch('/{id}/update-status', 'toggleActive');
-        });
-
-        Route::group(['prefix' => 'ticket', 'controller' => TicketController::class], function () {
-            Route::get('/', 'index');
-            Route::post('/store', 'store');
-            Route::get('/{id}/show', 'show');
-            Route::put('/{id}/update', 'update');
-            Route::delete('/{id}/delete', 'destroy');
-            Route::patch('/{id}/update-status', 'toggleActive');
-
-            Route::get('/{uuid}/generate-qrcode', 'generateQrCodeImage');
-
-            Route::get('/get-ticket-by-qrcode', 'getTicketFromQrCode');
-
-            Route::post('/use-ticket', 'markTicketAsUsed');
-        });
-
-        Route::group(['prefix' => 'event', 'controller' => EventController::class], function () {
-            Route::get('/', 'index');
-            Route::post('/store', 'store');
-            Route::get('/{slug}', 'show');
-            Route::put('/{slug}/update', 'update');
-            Route::delete('/{slug}/delete', 'destroy');
-            Route::patch('/{slug}/update-status', 'updateStatus');
-        });
+        Route::patch('/{id}/update-status', 'toggleActive');
     });
+
+    Route::group(['prefix' => 'ticket', 'controller' => TicketController::class], function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::get('/{id}/show', 'show');
+        Route::put('/{id}/update', 'update');
+        Route::delete('/{id}/delete', 'destroy');
+        Route::patch('/{id}/update-status', 'toggleActive');
+
+        Route::get('/{uuid}/generate-qrcode', 'generateQrCodeImage');
+
+        Route::get('/get-ticket-by-qrcode', 'getTicketFromQrCode');
+
+        Route::post('/use-ticket', 'markTicketAsUsed');
+    });
+
+    Route::group(['prefix' => 'event', 'controller' => EventController::class], function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::get('/{slug}', 'show');
+        Route::put('/{slug}/update', 'update');
+        Route::delete('/{slug}/delete', 'destroy');
+        Route::patch('/{slug}/update-status', 'updateStatus');
+    });
+    // });
 
     Route::group(['prefix' => 'order', 'controller' => OrderController::class], function () {
         Route::get('/', 'index');

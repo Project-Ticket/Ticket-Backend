@@ -42,7 +42,11 @@ class EventOrganizer extends Model
         'application_submitted_at',
         'reviewed_by',
         'reviewed_at',
-        'status'
+        'status',
+        'payment_reference',
+        'payment_status',
+        'paid_at',
+        'payment_method',
     ];
 
     protected $casts = [
@@ -73,5 +77,10 @@ class EventOrganizer extends Model
     public function reviewedBy()
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method');
     }
 }
