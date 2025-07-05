@@ -84,13 +84,6 @@ class EventOragnizerController extends Controller
     {
         $organizer = EventOrganizer::with(['user'])->where('uuid', $uuid)->firstOrFail();
 
-        if (
-            $organizer->application_status === 'under_review' &&
-            $organizer->reviewed_by !== Auth::id()
-        ) {
-            return redirect()->back()->with('error', 'Aplikasi ini sedang direview oleh pengguna lain.');
-        }
-
         return view('admin.pages.event-organizer.show', compact('organizer'));
     }
 

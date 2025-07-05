@@ -94,7 +94,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{slug}', 'show');
         Route::put('/{slug}/update', 'update');
         Route::delete('/{slug}/delete', 'destroy');
+        Route::get('/organizer/event', 'getByOrganizer');
+
         Route::patch('/{slug}/update-status', 'updateStatus');
+        Route::post('/{id}/featured-event', 'toggleFeatured');
     });
     // });
 

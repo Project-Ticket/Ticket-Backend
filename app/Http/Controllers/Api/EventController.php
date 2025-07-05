@@ -187,7 +187,7 @@ class EventController extends Controller
                 'organizer:id,organization_name,organization_slug,logo,description,website,instagram,twitter,facebook,contact_person,contact_phone,contact_email',
                 'category:id,name',
                 'tags:id,name'
-            ])->where('slug', $slug)->first();
+            ])->where('slug', $slug)->orWhere('id', $slug)->first();
 
             if (!$event) {
                 return MessageResponseJson::notFound('Event not found');
@@ -351,12 +351,17 @@ class EventController extends Controller
         }
     }
 
-    public function getByOrganizer($organizerId): JsonResponse
+    public function getByOrganizer(Request $request): JsonResponse
     {
         try {
-            $organizer = $this->eventOrganizer->findOrFail($organizerId);
+            $organizer = $this->eventOrganizer->where('id', Auth::user()->eventOrganizer->id)->first();
+
+            if (!$organizer) {
+                return MessageResponseJson::notFound('Organizer not found');
+            }
+
             $events = $this->event->with(['category:id,name', 'tags:id,name'])
-                ->where('organizer_id', $organizerId)
+                ->where('organizer_id', $organizer->id)
                 ->orderByDesc('created_at')
                 ->paginate(15);
 
@@ -414,6 +419,7 @@ class EventController extends Controller
     {
         try {
             $event = $this->event->findOrFail($id);
+
             $event->update(['is_featured' => !$event->is_featured]);
 
             return MessageResponseJson::success('Event featured status updated successfully', $event);
