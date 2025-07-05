@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TicketTypeController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WhistlistController;
 use App\Http\Controllers\Api\WilayahController;
 use App\Http\Middleware\RoleMiddleware;
@@ -38,7 +39,7 @@ Route::group(['prefix' => 'ticket-type', 'controller' => TicketTypeController::c
     Route::get('/{eventId}/available', 'getAvailable');
 });
 
-Route::post('/webhook', [OrderController::class, 'webhook']);
+Route::post('/webhook', [WebhookController::class, 'webhook']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -58,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{uuid}/delete', 'destroy');
 
         Route::post('/{uuid}/resubmit-application', 'resubmitApplication');
+        Route::post('/{uuid}/regenerate-payment-invoice', 'regeneratePaymentInvoice');
     });
 
     // Route::middleware(RoleMiddleware::class)->group(function () {
@@ -93,7 +95,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{slug}', 'show');
         Route::put('/{slug}/update', 'update');
         Route::delete('/{slug}/delete', 'destroy');
+        Route::get('/organizer/event', 'getByOrganizer');
+
         Route::patch('/{slug}/update-status', 'updateStatus');
+        Route::post('/{id}/featured-event', 'toggleFeatured');
     });
     // });
 

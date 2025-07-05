@@ -109,11 +109,16 @@ class LoginController extends Controller
                 return MessageResponseJson::unauthorized();
             }
 
-            $eventOrganizer = $user->eventOrganizer()->first();
+            $eventOrganizer = $user->eventOrganizer()
+                ->where('status', 1)
+                ->where('application_status', 'approved')
+                ->where('verification_status', 'verified')
+                ->first();
 
-            $user->is_event_organizer = $eventOrganizer && $eventOrganizer->status == 1;
+            $user->is_event_organizer = $eventOrganizer !== null;
             $user->appliaction_status_organizer = $eventOrganizer?->application_status;
             $user->verification_status_organizer = $eventOrganizer?->verification_status;
+            $user->organizer_id = $eventOrganizer?->id;
 
             return MessageResponseJson::success('Token is valid', [
                 'user' => $user,
