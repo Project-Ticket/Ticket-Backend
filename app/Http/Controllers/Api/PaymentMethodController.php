@@ -2,28 +2,34 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Facades\MessageResponseJson;
 use App\Http\Controllers\Controller;
+use App\Models\PaymentMethod;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
 
 class PaymentMethodController extends Controller
 {
-    protected $paymentService;
+    protected $paymentMethod;
 
     public function __construct()
     {
-        $this->paymentService = new PaymentService();
+        $this->paymentMethod = new PaymentMethod();
     }
 
     public function index(Request $request)
     {
-        $type = $request->query('type');
-        $paymentMethods = $this->paymentService->getAvailablePaymentMethods($type);
+        $type = $request->input('type');
 
-        return response()->json([
-            'success' => true,
-            'data' => $paymentMethods
-        ]);
+        $query = PaymentMethod::active()->orderBy('sort_order');
+
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        $paymentMethods = $query->get();
+
+        return MessageResponseJson::success('success get payment methods', $paymentMethods);
     }
 
     public function calculateFee(Request $request)
@@ -52,5 +58,12 @@ class PaymentMethodController extends Controller
                 'message' => $e->getMessage()
             ], 400);
         }
+    }
+
+    public function show($code)
+    {
+        $paymentMethod = PaymentMethod::active()->where('code', $code)->firstOrFail();
+
+        return MessageResponseJson::success('success get payment methods', $paymentMethod);
     }
 }

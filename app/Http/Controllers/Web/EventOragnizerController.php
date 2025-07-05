@@ -33,9 +33,7 @@ class EventOragnizerController extends Controller
 
         return DataTables::of($organizers)
             ->addIndexColumn()
-            ->editColumn('organization_name', function ($row) {
-                return '<a href="javascript:void(0)" class="fw-bold text-primary link-under-review" data-uuid="' . $row->uuid . '" data-url="' . route('event-organizer.show', $row->uuid) . '">' . e($row->organization_name) . '</a>';
-            })
+            ->editColumn('organization_name', fn($row) => e($row->organization_name))
             ->addColumn('owner_name', fn($row) => optional($row->user)->name ?? '-')
             ->addColumn('owner_email', fn($row) => optional($row->user)->email ?? '-')
             ->addColumn('owner_phone', fn($row) => optional($row->user)->phone ?? '-')

@@ -794,7 +794,10 @@ class EventOrganizerController extends Controller
                 'Event organizer status retrieved successfully',
                 [
                     'has_application' => true,
-                    'organizer' => $eventOrganizer
+                    'organizer' => [
+                        ...$eventOrganizer->toArray(),
+                        'uuid' => $eventOrganizer->uuid
+                    ]
                 ]
             );
         } catch (\Throwable $th) {

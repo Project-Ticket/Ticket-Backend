@@ -34,64 +34,82 @@
 
 @push('scripts')
     <script>
-        $(function () {
+        $(function() {
             $('#eo-table').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: '{{ route('event-organizer.getData') }}',
                 columns: [{
-                    data: 'DT_RowIndex',
-                    name: 'DT_RowIndex',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'organization_name',
-                    name: 'organization_name'
-                },
-                {
-                    data: 'owner_name',
-                    name: 'user.name'
-                },
-                {
-                    data: 'owner_email',
-                    name: 'user.email'
-                },
-                {
-                    data: 'owner_phone',
-                    name: 'user.phone'
-                },
-                {
-                    data: 'city',
-                    name: 'city'
-                },
-                {
-                    data: 'status',
-                    name: 'status',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'verification_status',
-                    name: 'verification_status',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'created_at',
-                    name: 'created_at'
-                },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false
-                },
-                ]
+                        data: 'DT_RowIndex',
+                        name: 'DT_RowIndex',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'organization_name',
+                        name: 'organization_name'
+                    },
+                    {
+                        data: 'owner_name',
+                        name: 'user.name'
+                    },
+                    {
+                        data: 'owner_email',
+                        name: 'user.email'
+                    },
+                    {
+                        data: 'owner_phone',
+                        name: 'user.phone'
+                    },
+                    {
+                        data: 'city',
+                        name: 'city'
+                    },
+                    {
+                        data: 'status',
+                        name: 'status',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'verification_status',
+                        name: 'verification_status',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'created_at'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    },
+                ],
+                rowCallback: function(row, data) {
+                    $(row).css('cursor', 'pointer');
+                    $(row).on('click', function(e) {
+                        if ($(e.target).closest('.btn').length === 0) {
+                            $.ajax({
+                                url: `{{ url('~admin-panel/event-organizer') }}/${data.uuid}/mark-under-review`,
+                                method: 'POST',
+                                data: {
+                                    _token: '{{ csrf_token() }}'
+                                },
+                                complete: function() {
+                                    window.location.href =
+                                        `{{ url('~admin-panel/event-organizer') }}/${data.uuid}/show`;
+                                }
+                            });
+                        }
+                    });
+                }
             });
         });
 
-        $(document).on('click', '.link-under-review', function (e) {
+        $(document).on('click', '.link-under-review', function(e) {
             e.preventDefault();
             const url = $(this).data('url');
             const uuid = $(this).data('uuid');
@@ -102,14 +120,14 @@
                 data: {
                     _token: '{{ csrf_token() }}'
                 },
-                complete: function () {
+                complete: function() {
                     window.location.href = url;
                 }
             });
         });
 
 
-        $(document).on('click', '.btn-global-delete', function (e) {
+        $(document).on('click', '.btn-global-delete', function(e) {
             e.preventDefault();
             const url = $(this).data('url');
 
@@ -130,11 +148,11 @@
                         data: {
                             _token: '{{ csrf_token() }}'
                         },
-                        success: function (res) {
+                        success: function(res) {
                             Swal.fire('Berhasil!', res.message, 'success');
                             $('#eo-table').DataTable().ajax.reload(null, false);
                         },
-                        error: function (xhr) {
+                        error: function(xhr) {
                             Swal.fire('Gagal!', xhr.responseJSON?.message ||
                                 'Terjadi kesalahan.', 'error');
                         }

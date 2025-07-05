@@ -404,6 +404,7 @@ class TicketController extends Controller
             }
 
             $qrCode = QrCode::format('png')
+                ->merge(public_path('admin/logo/logo4.png'), 0.5, true)
                 ->size(300)
                 ->margin(2)
                 ->generate(Crypt::encrypt($ticket->qr_code));
