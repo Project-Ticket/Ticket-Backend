@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\PaymentProviderInterface;
 use App\Facades\MessageResponseJson;
 use App\Http\Controllers\Controller;
 use App\Models\EventOrganizer;
+use App\Models\Setting;
+use App\Services\PaymentService;
+use App\Services\SettingService;
+use App\Services\Status;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,11 +20,16 @@ use Illuminate\Support\Str;
 
 class EventOrganizerController extends Controller
 {
-    protected $eventOrganizer;
+    protected $eventOrganizer, $paymentService, $paymentProvider;
 
-    public function __construct()
-    {
+    public function __construct(
+        PaymentService $paymentService,
+        PaymentProviderInterface $paymentProvider
+
+    ) {
         $this->eventOrganizer = new EventOrganizer();
+        $this->paymentService = $paymentService;
+        $this->paymentProvider = $paymentProvider;
     }
 
     public function index(Request $request): JsonResponse
@@ -56,9 +66,22 @@ class EventOrganizerController extends Controller
             }
 
             $perPage = $request->get('per_page', 10);
-            $eventOrganizers = $query->with('user:id,name,email')
+
+            $eventOrganizers = $query->with([
+                'user:id,name,email',
+                'paymentMethod:id,name'
+            ])
+                ->where('user_id', Auth::id())
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
+
+            $eventOrganizers->getCollection()->transform(function ($organizer) {
+                $organizer->can_regenerate_invoice = in_array(
+                    $organizer->payment_status,
+                    ['pending', 'expired', 'failed', 'unpaid']
+                );
+                return $organizer;
+            });
 
             return MessageResponseJson::paginated(
                 'Event organizers retrieved successfully',
@@ -174,8 +197,17 @@ class EventOrganizerController extends Controller
                 }
             }
 
+            $applicationFee = SettingService::get('application_fee_event_organizer');
+
+            $paymentMethod = $this->paymentService->getPaymentMethod($request->payment_method);
+            if (!$paymentMethod) {
+                return MessageResponseJson::badRequest('Payment method is not available');
+            }
+
+            $paymentFee = $this->paymentService->calculatePaymentFee($request->payment_method, $applicationFee);
+            $totalAmount = $applicationFee + $paymentFee;
+
             $eventOrganizer = $this->eventOrganizer->create([
-                'uuid'                    => Str::uuid(),
                 'user_id'                 => Auth::id(),
                 'organization_name'       => $request->organization_name,
                 'organization_slug'       => $slug,
@@ -196,22 +228,55 @@ class EventOrganizerController extends Controller
                 'bank_name'               => $request->bank_name,
                 'bank_account_number'     => $request->bank_account_number,
                 'bank_account_name'       => $request->bank_account_name,
-                'application_fee'         => $request->application_fee,
+                'application_fee'         => SettingService::get('application_fee_event_organizer'),
                 'security_deposit'        => $request->security_deposit,
                 'required_documents'      => $request->required_documents ? json_encode($request->required_documents) : null,
                 'uploaded_documents'      => !empty($uploadedDocuments) ? json_encode($uploadedDocuments) : null,
                 'application_submitted_at' => now(),
                 'verification_status'     => 'pending',
                 'application_status'      => 'pending',
-                'status'                  => 1,
+                'status'                  => Status::getId('eventOrganizerStatus', 'PENDING'),
+            ]);
+
+            $invoiceData = [
+                'external_id' => 'EO-Application-' . $eventOrganizer->uuid,
+                'amount' => $totalAmount,
+                'description' => "Event Organizer Application Fee - {$eventOrganizer->organization_name}",
+                'currency' => 'IDR',
+                'customer' => [
+                    'given_names' => $eventOrganizer->organization_name,
+                    'email' => $user->email,
+                    "mobile_number" => $eventOrganizer->contact_phone,
+                    "addresses" => [
+                        [
+                            "city" => $eventOrganizer->city,
+                            "country" => "Indonesia",
+                            "postal_code" => $eventOrganizer->postal_code,
+                            "state" => $eventOrganizer->province,
+                        ]
+                    ]
+                ],
+                'payment_methods' => [$request->payment_method],
+                "success_redirect_url" => "https://www.google.com",
+                "failure_redirect_url" => "https://www.google.com",
+            ];
+
+            $invoiceResult = $this->paymentProvider->createInvoice($invoiceData);
+
+            $eventOrganizer->update([
+                'payment_reference' => $invoiceResult['id'],
+                'payment_method' => $request->payment_method
             ]);
 
             DB::commit();
 
-            return MessageResponseJson::created(
-                'Event organizer application submitted successfully',
-                $eventOrganizer->load('user:id,name,email')
-            );
+            return MessageResponseJson::created('Event Organizer application submitted', [
+                'event_organizer'   => $eventOrganizer->load('user:id,name,email'),
+                'payment_url'       => $invoiceResult['invoice_url'],
+                'invoice_id'        => $invoiceResult['id'],
+                'total_amount'      => $totalAmount,
+                'payment_method'    => $paymentMethod->name,
+            ]);
         } catch (\Throwable $th) {
             DB::rollBack();
 
@@ -222,7 +287,6 @@ class EventOrganizerController extends Controller
                     Storage::disk('public')->delete($doc);
                 }
             }
-
             return MessageResponseJson::serverError(
                 'Failed to create event organizer',
                 ['error' => $th->getMessage()]
@@ -574,6 +638,96 @@ class EventOrganizerController extends Controller
 
             return MessageResponseJson::serverError(
                 'Failed to resubmit event organizer application',
+                ['error' => $th->getMessage()]
+            );
+        }
+    }
+    public function regeneratePaymentInvoice(Request $request, string $uuid): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'payment_method' => 'required|string|exists:payment_methods,code',
+        ]);
+
+        if ($validator->fails()) {
+            return MessageResponseJson::validationError(
+                'Validation failed',
+                $validator->errors()->toArray()
+            );
+        }
+
+        DB::beginTransaction();
+        try {
+            $eventOrganizer = $this->eventOrganizer
+                ->where('uuid', $uuid)
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if (!$eventOrganizer) {
+                return MessageResponseJson::notFound(
+                    'Event organizer not found or unauthorized'
+                );
+            }
+
+            $allowedStatuses = ['pending', 'expired', 'failed', 'unpaid'];
+            if (!in_array($eventOrganizer->payment_status, $allowedStatuses)) {
+                return MessageResponseJson::forbidden(
+                    'Cannot regenerate invoice for this application'
+                );
+            }
+
+            $applicationFee = SettingService::get('application_fee_event_organizer');
+            $paymentMethod = $this->paymentService->getPaymentMethod($request->payment_method);
+
+            if (!$paymentMethod) {
+                return MessageResponseJson::badRequest('Payment method is not available');
+            }
+
+            $paymentFee = $this->paymentService->calculatePaymentFee($request->payment_method, $applicationFee);
+            $totalAmount = $applicationFee + $paymentFee;
+
+            $invoiceData = [
+                'external_id' => 'EO-Application-' . $eventOrganizer->uuid,
+                'amount' => $totalAmount,
+                'description' => "Event Organizer Application Fee - {$eventOrganizer->organization_name}",
+                'currency' => 'IDR',
+                'customer' => [
+                    'given_names' => $eventOrganizer->organization_name,
+                    'email' => $eventOrganizer->user->email,
+                    "mobile_number" => $eventOrganizer->contact_phone,
+                    "addresses" => [
+                        [
+                            "city" => $eventOrganizer->city,
+                            "country" => "Indonesia",
+                            "postal_code" => $eventOrganizer->postal_code,
+                            "state" => $eventOrganizer->province,
+                        ]
+                    ]
+                ],
+                'payment_methods' => [$request->payment_method],
+                "success_redirect_url" => "https://www.google.com",
+                "failure_redirect_url" => "https://www.google.com",
+            ];
+
+            $invoiceResult = $this->paymentProvider->createInvoice($invoiceData);
+
+            // Update payment reference dan status
+            $eventOrganizer->update([
+                'payment_reference' => $invoiceResult['id'],
+                'payment_status' => 'pending', // Tambahkan kolom payment_status di migration
+            ]);
+
+            DB::commit();
+
+            return MessageResponseJson::success('Payment invoice regenerated', [
+                'payment_url' => $invoiceResult['invoice_url'],
+                'invoice_id' => $invoiceResult['id'],
+                'total_amount' => $totalAmount,
+                'payment_method' => $paymentMethod->name,
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return MessageResponseJson::serverError(
+                'Failed to regenerate payment invoice',
                 ['error' => $th->getMessage()]
             );
         }
