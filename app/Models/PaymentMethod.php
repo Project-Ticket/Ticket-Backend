@@ -47,18 +47,15 @@ class PaymentMethod extends Model
         return $query->orderBy('sort_order');
     }
 
-    // Methods
     public function calculateFee($amount)
     {
         $percentageFee = ($amount * $this->fee_percentage) / 100;
         $totalFee = $percentageFee + $this->fee_fixed;
 
-        // Apply minimum fee
         if ($totalFee < $this->minimum_fee) {
             $totalFee = $this->minimum_fee;
         }
 
-        // Apply maximum fee if set
         if ($this->maximum_fee && $totalFee > $this->maximum_fee) {
             $totalFee = $this->maximum_fee;
         }

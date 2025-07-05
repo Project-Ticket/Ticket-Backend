@@ -109,19 +109,31 @@ class LoginController extends Controller
                 return MessageResponseJson::unauthorized();
             }
 
-            $eventOrganizer = $user->eventOrganizer()
-                ->where('status', 1)
-                ->where('application_status', 'approved')
-                ->where('verification_status', 'verified')
-                ->first();
+            $eventOrganizerDetails = null;
 
-            $user->is_event_organizer = $eventOrganizer !== null;
-            $user->appliaction_status_organizer = $eventOrganizer?->application_status;
-            $user->verification_status_organizer = $eventOrganizer?->verification_status;
-            $user->organizer_id = $eventOrganizer?->id;
+            if ($user->hasRole('Organizer')) {
+                $eventOrganizer = $user->eventOrganizer()
+                    ->where('status', 1)
+                    ->where(function ($query) {
+                        $query->whereIn('application_status', ['approved', 'pending', 'under_review'])
+                            ->whereIn('verification_status', ['verified', 'pending']);
+                    })
+                    ->first();
+
+                $eventOrganizerDetails = $eventOrganizer ? [
+                    'is_event_organizer' => true,
+                    'application_status_organizer' => $eventOrganizer->application_status,
+                    'verification_status_organizer' => $eventOrganizer->verification_status,
+                    'organizer_id' => $eventOrganizer->id,
+                    'organizer_uuid' => $eventOrganizer->uuid
+                ] : null;
+            }
+
+            $user->event_organizer_details = $eventOrganizerDetails;
 
             return MessageResponseJson::success('Token is valid', [
                 'user' => $user,
+                'is_event_organizer_role' => $user->hasRole('Event Organizer')
             ]);
         } catch (\Throwable $e) {
             return MessageResponseJson::serverError('Authentication check failed: ' . $e->getMessage());

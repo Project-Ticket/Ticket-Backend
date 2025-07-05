@@ -45,7 +45,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('auth')->group(function () {
         Route::get('check', [LoginController::class, 'checkAuth']);
-
+    });
+    Route::prefix('user')->group(function () {
         Route::put('/update-profile', [UserController::class, 'updateProfile']);
         Route::get('/profile', [UserController::class, 'getProfile']);
         Route::put('/update-password', [UserController::class, 'updatePassword']);
@@ -58,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{uuid}/show', 'show');
         Route::delete('/{uuid}/delete', 'destroy');
 
+        Route::get('/get-my-status-application', 'getMyStatus');
         Route::post('/{uuid}/resubmit-application', 'resubmitApplication');
         Route::post('/{uuid}/regenerate-payment-invoice', 'regeneratePaymentInvoice');
     });
@@ -120,6 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::group(['prefix' => 'payment-method', 'controller' => PaymentMethodController::class], function () {
         Route::get('/', 'index');
+        Route::get('/{code}/show', 'show');
         Route::post('/calculate-fee', 'calculateFee');
     });
 
