@@ -72,4 +72,14 @@ class Order extends Model
     {
         return $this->belongsTo(Event::class);
     }
+
+    public function ticketType()
+    {
+        return $this->belongsTo(TicketType::class);
+    }
+
+    public function scopeLatestOrder($query)
+    {
+        return $query->latest();
+    }
 }

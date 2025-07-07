@@ -17,4 +17,9 @@ class TicketType extends Model
     {
         return $this->hasMany(Ticket::class);
     }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'ticket_type_id');
+    }
 }

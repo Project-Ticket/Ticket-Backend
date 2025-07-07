@@ -231,6 +231,8 @@ class OrderController extends Controller
                         'email' => $order->user->email,
                     ],
                     'payment_methods' => [$request->payment_method],
+                    "success_redirect_url" => $request->success_redirect_url,
+                    "failure_redirect_url" => $request->failure_redirect_url,
                 ];
 
                 $invoiceResult = $this->paymentProvider->createInvoice($invoiceData);
@@ -324,12 +326,16 @@ class OrderController extends Controller
                 return MessageResponseJson::badRequest("Cannot update order with status: {$statusName}");
             }
 
-            if ($request->has('payment_status')) {
-                return MessageResponseJson::badRequest('Payment status can only be updated via payment gateway webhook');
+            if ($order->payment_status === 'paid' || $order->expired_at < now()) {
+                return MessageResponseJson::badRequest('Order cannot be modified');
             }
 
-            if ($request->has('status')) {
-                return MessageResponseJson::badRequest('Order status is automatically managed by payment system');
+            // Cegah update field yang tidak diizinkan
+            $forbiddenFields = ['payment_status', 'status', 'user_id', 'event_id', 'subtotal', 'total_amount'];
+            foreach ($forbiddenFields as $field) {
+                if ($request->has($field)) {
+                    return MessageResponseJson::badRequest("Cannot update field: {$field}");
+                }
             }
 
             $updateData = [];
@@ -364,7 +370,15 @@ class OrderController extends Controller
 
                     try {
                         $order->load(['user', 'event']);
-                        $invoiceResult = $this->paymentService->createXenditInvoice($order, [$newPaymentMethodCode]);
+                        $invoiceResult = $this->paymentProvider->createInvoice([
+                            'external_id' => $order->order_number,
+                            'amount' => $newTotalAmount,
+                            'description' => "Payment for {$order->event->title} - Order #{$order->order_number}",
+                            'payment_methods' => [$newPaymentMethodCode],
+                            "success_redirect_url" => $request->success_redirect_url,
+                            "failure_redirect_url" => $request->failure_redirect_url,
+                        ]);
+
                         $updateData['payment_reference'] = $invoiceResult['id'];
                     } catch (\Exception $e) {
                         DB::rollBack();
@@ -373,6 +387,7 @@ class OrderController extends Controller
                 }
             }
 
+            // Pastikan ada perubahan yang akan dilakukan
             if (empty($updateData)) {
                 return MessageResponseJson::badRequest('No valid fields to update');
             }
@@ -383,21 +398,17 @@ class OrderController extends Controller
 
             $order->load([
                 'user:id,name,email',
-                'event:id,title,slug,start_datetime,end_datetime,venue_name',
+                'event:id,title,slug,start_datetime,end_datetime',
                 'orderItems:id,order_id,ticket_type_id,quantity,unit_price,total_price',
-                'orderItems.ticketType:id,name,price,benefits'
+                'orderItems.ticketType:id,name,price'
             ]);
 
-            $order->status_info = Status::getFormatted('orderStatus', $order->status, true);
-
-            $responseData = [
-                'order' => $order,
-            ];
+            $responseData = ['order' => $order];
 
             if (isset($invoiceResult)) {
-                $responseData['payment_url'] = $invoiceResult['invoice_url'];
-                $responseData['invoice_id'] = $invoiceResult['id'];
-                $responseData['payment_method'] = $paymentMethod->name;
+                $responseData['payment_url'] = $invoiceResult['invoice_url'] ?? null;
+                $responseData['invoice_id'] = $invoiceResult['id'] ?? null;
+                $responseData['payment_method'] = $paymentMethod->name ?? null;
             }
 
             return MessageResponseJson::success('Order updated successfully', $responseData);

@@ -24,7 +24,13 @@ class TicketTypeController extends Controller
     public function index(Request $request, $eventId = null): JsonResponse
     {
         try {
-            $query = $this->ticketType->with('event:id,title,slug,organizer_id');
+            $query = $this->ticketType->with([
+                'event:id,title,slug,organizer_id',
+                'orders' => function ($q) {
+                    $q->select('ticket_type_id', DB::raw('COUNT(*) as total_orders'))
+                        ->groupBy('ticket_type_id');
+                }
+            ]);
 
             if ($eventId) {
                 $query->where('event_id', $eventId);
@@ -67,7 +73,15 @@ class TicketTypeController extends Controller
                 $query->orderBy($sortBy, $sortOrder);
             }
 
-            $ticketTypes = $query->paginate($request->get('per_page', 15));
+            $ticketTypes = $query->paginate($request->get('per_page', 15))->through(function ($ticketType) {
+                $ticketType->total_orders = optional($ticketType->orders->first())->total_orders ?? 0;
+                $ticketType->total_revenue = $ticketType->total_orders * $ticketType->price;
+                $ticketType->available_quantity = $ticketType->quantity - $ticketType->sold_quantity;
+
+                unset($ticketType->orders);
+
+                return $ticketType;
+            });
 
             return MessageResponseJson::paginated('Ticket types retrieved successfully', $ticketTypes);
         } catch (\Throwable $th) {
@@ -113,7 +127,7 @@ class TicketTypeController extends Controller
 
             $data = $request->except('benefits');
             $data['benefits'] = $request->benefits ? json_encode($request->benefits) : null;
-            $data['sold_quantity'] = $request->quantity;
+            $data['sold_quantity'] = 0;
             $data['is_active'] = $request->boolean('is_active', true);
             $data['sort_order'] = $request->get('sort_order', 0);
 
@@ -133,11 +147,33 @@ class TicketTypeController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $ticketType = $this->ticketType->with('event:id,title,slug,start_datetime,registration_end')
+            $ticketType = $this->ticketType->with([
+                'event:id,title,slug,start_datetime,registration_end',
+                'orders' => function ($q) {
+                    $q->select(
+                        'ticket_type_id',
+                        DB::raw('COUNT(*) as total_orders'),
+                        DB::raw('SUM(quantity) as total_tickets_sold')
+                    )
+                        ->groupBy('ticket_type_id');
+                },
+                'orders.latestOrder' => function ($q) {
+                    $q->select('id', 'ticket_type_id', 'user_id', 'created_at')
+                        ->with('user:id,name,email')
+                        ->latest();
+                }
+            ])
                 ->findOrFail($id);
 
+            $ticketType->total_orders = optional($ticketType->orders->first())->total_orders ?? 0;
+            $ticketType->total_tickets_sold = optional($ticketType->orders->first())->total_tickets_sold ?? 0;
+            $ticketType->total_revenue = $ticketType->total_tickets_sold * $ticketType->price;
             $ticketType->available_quantity = $ticketType->quantity - $ticketType->sold_quantity;
             $ticketType->is_sale_active = now()->between($ticketType->sale_start, $ticketType->sale_end);
+
+            $ticketType->latest_order = optional($ticketType->orders->first()->latestOrder)->first();
+
+            unset($ticketType->orders);
 
             return MessageResponseJson::success('Ticket type retrieved successfully', $ticketType);
         } catch (\Throwable $th) {
@@ -157,8 +193,8 @@ class TicketTypeController extends Controller
             'quantity'        => 'sometimes|integer|min:1',
             'min_purchase'    => 'sometimes|integer|min:1',
             'max_purchase'    => 'sometimes|integer|min:1|gte:min_purchase',
-            'sale_start'      => 'sometimes|date|after:now',
-            'sale_end'        => 'sometimes|date|after:sale_start',
+            'sale_start'      => 'sometimes|date',
+            'sale_end'        => 'sometimes|date',
             'is_active'       => 'boolean',
             'sort_order'      => 'integer|min:0',
             'benefits'        => 'nullable|array',
@@ -172,15 +208,57 @@ class TicketTypeController extends Controller
         try {
             $ticketType = $this->ticketType->findOrFail($id);
 
-            if ($ticketType->sold_quantity > 0) {
-                $restrictedFields = ['price', 'quantity'];
-                $hasRestrictedUpdate = collect($restrictedFields)->some(function ($field) use ($request) {
-                    return $request->filled($field);
-                });
+            if (!$ticketType->is_active) {
+                $data = $request->except('benefits');
 
-                if ($hasRestrictedUpdate) {
+                if ($request->filled('benefits')) {
+                    $data['benefits'] = json_encode($request->benefits);
+                }
+
+                if ($request->filled('is_active')) {
+                    $data['is_active'] = $request->boolean('is_active');
+                }
+
+                $ticketType->update($data);
+
+                DB::commit();
+                $ticketType->load('event:id,title,slug');
+                return MessageResponseJson::success('Ticket type updated successfully', $ticketType);
+            }
+
+            if ($ticketType->sold_quantity > 0) {
+                $allowedFields = [
+                    'name',
+                    'description',
+                    'min_purchase',
+                    'max_purchase',
+                    'sale_start',
+                    'sale_end',
+                    'sort_order',
+                    'benefits',
+                    'is_active'
+                ];
+
+                $restrictedFields = collect($request->keys())->diff($allowedFields);
+
+                if ($restrictedFields->isNotEmpty()) {
                     return MessageResponseJson::badRequest(
-                        'Cannot update price or quantity as tickets have already been sold'
+                        'Cannot update these fields for ticket type with sold tickets: ' .
+                            $restrictedFields->implode(', ')
+                    );
+                }
+
+                if ($request->filled('quantity')) {
+                    if ($request->quantity < $ticketType->sold_quantity) {
+                        return MessageResponseJson::badRequest(
+                            'Quantity cannot be less than already sold tickets'
+                        );
+                    }
+                }
+
+                if ($request->filled('price') && $request->price != $ticketType->price) {
+                    return MessageResponseJson::badRequest(
+                        'Cannot change price for ticket type with sold tickets'
                     );
                 }
             }
@@ -193,12 +271,6 @@ class TicketTypeController extends Controller
 
             if ($request->filled('is_active')) {
                 $data['is_active'] = $request->boolean('is_active');
-            }
-
-            if ($request->filled('quantity') && $request->quantity < $ticketType->sold_quantity) {
-                return MessageResponseJson::badRequest(
-                    'Quantity cannot be less than already sold tickets'
-                );
             }
 
             $ticketType->update($data);

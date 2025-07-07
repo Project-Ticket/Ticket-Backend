@@ -257,8 +257,8 @@ class EventOrganizerController extends Controller
                     ]
                 ],
                 'payment_methods' => [$request->payment_method],
-                "success_redirect_url" => "https://www.google.com",
-                "failure_redirect_url" => "https://www.google.com",
+                "success_redirect_url" => $request->success_redirect_url,
+                "failure_redirect_url" => $request->failure_redirect_url,
             ];
 
             $invoiceResult = $this->paymentProvider->createInvoice($invoiceData);
@@ -515,7 +515,6 @@ class EventOrganizerController extends Controller
             'bank_name'                 => 'nullable|string|max:100',
             'bank_account_number'       => 'nullable|string|max:50',
             'bank_account_name'         => 'nullable|string|max:100',
-            'application_fee'           => 'nullable|numeric|min:0',
             'security_deposit'          => 'nullable|numeric|min:0',
             'required_documents'        => 'nullable|array',
             'required_documents.*'      => 'string|max:255',
@@ -567,11 +566,8 @@ class EventOrganizerController extends Controller
                 'bank_name'               => $request->bank_name,
                 'bank_account_number'     => $request->bank_account_number,
                 'bank_account_name'       => $request->bank_account_name,
-                'application_fee'         => $request->application_fee,
+                'application_fee'         => SettingService::get('application_fee_event_organizer'),
                 'security_deposit'        => $request->security_deposit,
-                'required_documents'      => $request->required_documents ? json_encode($request->required_documents) : null,
-
-                // Reset status
                 'application_status'      => 'pending',
                 'verification_status'     => 'pending',
                 'rejection_reason'        => null,
@@ -594,18 +590,42 @@ class EventOrganizerController extends Controller
                 $updateData['banner'] = $request->file('banner')->store('event-organizers/banners', 'public');
             }
 
+            $updateData['required_documents'] = $request->filled('required_documents')
+                ? json_encode($request->required_documents)
+                : $eventOrganizer->required_documents;
+
             $uploadedDocuments = json_decode($eventOrganizer->uploaded_documents, true) ?? [];
+
             if ($request->hasFile('uploaded_documents')) {
-                // Hapus dokumen lama
                 foreach ($uploadedDocuments as $oldDoc) {
                     Storage::disk('public')->delete($oldDoc);
                 }
-
                 $uploadedDocuments = [];
+
+                $user = Auth::user();
+                $userIdentifier = Str::before($user->email, '@');
+
                 foreach ($request->file('uploaded_documents') as $file) {
-                    $uploadedDocuments[] = $file->store('event-organizers/documents', 'public');
+                    $originalName = $file->getClientOriginalName();
+                    $fileName = pathinfo($originalName, PATHINFO_FILENAME)
+                        . '_'
+                        . $userIdentifier
+                        . '_'
+                        . now()->format('YmdHis')
+                        . '.'
+                        . $file->getClientOriginalExtension();
+
+                    $path = $file->storeAs(
+                        'event-organizers/documents',
+                        $fileName,
+                        'public'
+                    );
+
+                    $uploadedDocuments[] = $path;
                 }
                 $updateData['uploaded_documents'] = json_encode($uploadedDocuments);
+            } else {
+                $updateData['uploaded_documents'] = $eventOrganizer->uploaded_documents;
             }
 
             if ($request->filled('rejection_reason_response')) {
@@ -704,8 +724,8 @@ class EventOrganizerController extends Controller
                     ]
                 ],
                 'payment_methods' => [$request->payment_method],
-                "success_redirect_url" => "https://www.google.com",
-                "failure_redirect_url" => "https://www.google.com",
+                "success_redirect_url" => $request->success_redirect_url,
+                "failure_redirect_url" => $request->failure_redirect_url,
             ];
 
             $invoiceResult = $this->paymentProvider->createInvoice($invoiceData);
