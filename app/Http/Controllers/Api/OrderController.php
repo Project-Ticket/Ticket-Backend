@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Contracts\PaymentProviderInterface;
+use App\Helpers\Helper;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -103,10 +104,12 @@ class OrderController extends Controller
             'items.*.attendees.*.name' => 'required|string|max:255',
             'items.*.attendees.*.email' => 'required|email|max:255',
             'items.*.attendees.*.phone' => 'nullable|string|max:20',
-            'payment_method' => 'required|string|exists:payment_methods,code', // Changed this
+            'payment_method' => 'required|string|exists:payment_methods,code',
             'admin_fee' => 'nullable|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
+            // 'success_redirect_url' => 'required|url',
+            // 'failure_redirect_url' => 'required|url',
         ]);
 
         if ($validator->fails()) {
@@ -117,7 +120,7 @@ class OrderController extends Controller
             $event = $this->event->findOrFail($request->event_id);
             $user = Auth::user();
 
-            if ($event->status !== Status::getId('eventStatus', 'PUBLISHED')) {
+            if ($event->status !== $this->event::STATUS_PUBLISHED) {
                 return MessageResponseJson::badRequest('Event is not available for booking');
             }
 
@@ -168,7 +171,11 @@ class OrderController extends Controller
                 return MessageResponseJson::badRequest('Total amount cannot be negative');
             }
 
-            $orderNumber = $this->generateUniqueOrderNumber();
+            $orderNumber = Helper::generateUniqueOrderNumber();
+            if ($this->order->where('order_number', $orderNumber)->exists()) {
+                $orderNumber = Helper::generateUniqueOrderNumber();
+            }
+
             $order = $this->order->create([
                 'order_number' => $orderNumber,
                 'user_id' => $user->id,
@@ -178,7 +185,7 @@ class OrderController extends Controller
                 'payment_fee' => $paymentFee,
                 'discount_amount' => $discountAmount,
                 'total_amount' => $totalAmount,
-                'status' => Status::getId('orderStatus', 'PENDING'), // Status 1
+                'status' => $this->order::STATUS_PENDING, // Status 1
                 'payment_status' => 'unpaid',
                 'payment_method' => $request->payment_method, // Store the code
                 'expired_at' => now()->addHours(24),
@@ -198,8 +205,16 @@ class OrderController extends Controller
                 $ticketType->increment('sold_quantity', $orderItem['quantity']);
 
                 foreach ($orderItem['attendees'] as $attendee) {
-                    $ticketCode = $this->generateUniqueTicketCode();
-                    $qrCode = $this->generateUniqueQrCode();
+
+                    $ticketCode = Helper::generateQrCode();
+                    if ($this->ticket->where('ticket_code', $ticketCode)->exists()) {
+                        $ticketCode = Helper::generateQrCode();
+                    }
+
+                    $qrCode = Helper::generateQrCode();
+                    if ($this->ticket->where('qr_code', $qrCode)->exists()) {
+                        $qrCode = Helper::generateQrCode();
+                    }
 
                     $ticket = $this->ticket->create([
                         'ticket_code' => $ticketCode,
@@ -210,7 +225,7 @@ class OrderController extends Controller
                         'attendee_name' => $attendee['name'],
                         'attendee_email' => $attendee['email'],
                         'attendee_phone' => $attendee['phone'] ?? null,
-                        'status' => Status::getId('ticketStatus', 'PENDING PAYMENT'), // Status 1
+                        'status' => $this->ticket::STATUS_PENDING_PAYMENT,
                     ]);
 
                     $tickets[] = $ticket;
@@ -321,9 +336,8 @@ class OrderController extends Controller
                 return MessageResponseJson::notFound('Order not found');
             }
 
-            if ($order->status !== Status::getId('orderStatus', 'PENDING')) {
-                $statusName = Status::getName('orderStatus', $order->status);
-                return MessageResponseJson::badRequest("Cannot update order with status: {$statusName}");
+            if ($order->status !== $this->order::STATUS_PENDING) {
+                return MessageResponseJson::badRequest("Cannot update order with status Pending`");
             }
 
             if ($order->payment_status === 'paid' || $order->expired_at < now()) {
@@ -439,12 +453,13 @@ class OrderController extends Controller
                 return MessageResponseJson::badRequest('Cannot cancel paid order');
             }
 
-            if ($order->status === Status::getId('orderStatus', 'CANCELLED')) {
+
+            if ($order->status === $this->order::STATUS_CANCELED) {
                 return MessageResponseJson::badRequest('Order is already cancelled');
             }
 
             $order->update([
-                'status' => Status::getId('orderStatus', 'CANCELLED'),
+                'status' => $this->order::STATUS_CANCELED,
                 'payment_status' => 'failed'
             ]);
 
@@ -518,32 +533,5 @@ class OrderController extends Controller
         } catch (\Throwable $th) {
             return MessageResponseJson::serverError('Failed to retrieve statistics', [$th->getMessage()]);
         }
-    }
-
-    private function generateUniqueOrderNumber(): string
-    {
-        do {
-            $number = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
-        } while ($this->order->where('order_number', $number)->exists());
-
-        return $number;
-    }
-
-    private function generateUniqueTicketCode(): string
-    {
-        do {
-            $code = 'TKT-' . strtoupper(Str::random(8));
-        } while ($this->ticket->where('ticket_code', $code)->exists());
-
-        return $code;
-    }
-
-    private function generateUniqueQrCode(): string
-    {
-        do {
-            $code = strtoupper(Str::random(16));
-        } while ($this->ticket->where('qr_code', $code)->exists());
-
-        return $code;
     }
 }

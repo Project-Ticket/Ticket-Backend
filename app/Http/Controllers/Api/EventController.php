@@ -122,7 +122,7 @@ class EventController extends Controller
         try {
             $organizer = $this->eventOrganizer->findOrFail(Auth::user()->eventOrganizer->id);
 
-            if ($organizer->status !== 1 || $organizer->verification_status !== 'verified' || $organizer->application_status !== 'approved') {
+            if ($organizer->status !== $this->eventOrganizer::STATUS_ACTIVE || $organizer->verification_status !== 'verified' || $organizer->application_status !== 'approved') {
                 return MessageResponseJson::unauthorized("Event organizer tidak valid untuk membuat event.");
             }
 
@@ -146,7 +146,7 @@ class EventController extends Controller
             $data['slug'] = $slug;
             $data['banner_image'] = $bannerPath;
             $data['gallery_images'] = $galleryPaths ? json_encode($galleryPaths) : null;
-            $data['status'] = 1;
+            $data['status'] = $this->event::STATUS_DRAFT;
             $data['is_featured'] = $request->boolean('is_featured');
             $data['views_count'] = 0;
             $data['status'] = $request->input('status', 1);
@@ -194,10 +194,6 @@ class EventController extends Controller
             }
 
             $event->increment('views_count');
-
-            $formattedStatus = Status::getFormatted('eventStatus', $event->status, true);
-
-            $event->status = $formattedStatus;
 
             return MessageResponseJson::success('Event retrieved successfully', $event);
         } catch (\Throwable $th) {
@@ -329,9 +325,7 @@ class EventController extends Controller
                 return MessageResponseJson::notFound('Event not found');
             }
 
-            $completedStatusId = Status::getId('eventStatus', 'COMPLETED');
-
-            if ($event->status === $completedStatusId) {
+            if ($event->status === $this->event::STATUS_COMPLETED) {
                 return MessageResponseJson::unprocessable('Event dengan status COMPLETED tidak dapat dihapus.');
             }
 
@@ -401,10 +395,6 @@ class EventController extends Controller
             }
 
             $event->update(['status' => $request->status]);
-
-            $formattedStatus = Status::getFormatted('eventStatus', $event->status, true);
-
-            $event->status = $formattedStatus;
 
             DB::commit();
 

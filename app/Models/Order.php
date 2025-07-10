@@ -9,6 +9,10 @@ use Ramsey\Uuid\Uuid;
 
 class Order extends Model
 {
+    const STATUS_PENDING = 1;
+    const STATUS_PAID = 2;
+    const STATUS_CANCELED = 3;
+    const STATUS_EXPIRED = 4;
     use HasFactory, HasUUID;
     protected $fillable = [
         'uuid',

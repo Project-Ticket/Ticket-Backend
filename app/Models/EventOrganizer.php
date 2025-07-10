@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class EventOrganizer extends Model
 {
+
+    const STATUS_PENDING = 1;
+    const STATUS_ACTIVE = 2;
+    const STATUS_INACTIVE = 3;
+    const STATUS_SUSPENDED = 4;
     use HasUUID;
     protected $fillable = [
         'uuid',

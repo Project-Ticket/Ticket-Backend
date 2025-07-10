@@ -6,7 +6,6 @@ use App\Facades\MessageResponseJson;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\VerifyEmail;
-use App\Services\Status;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +59,7 @@ class RegisterController extends Controller
                 'city'        => $request->city,
                 'province'    => $request->province,
                 'postal_code' => $request->postal_code,
-                'status'      => Status::getId('userStatus', 'ACTIVE'),
+                'status'      => $this->user::STATUS_ACTIVE,
             ]);
 
             $user->assignRole('User');

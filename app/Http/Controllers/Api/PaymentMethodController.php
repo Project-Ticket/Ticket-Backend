@@ -32,34 +32,6 @@ class PaymentMethodController extends Controller
         return MessageResponseJson::success('success get payment methods', $paymentMethods);
     }
 
-    public function calculateFee(Request $request)
-    {
-        $request->validate([
-            'payment_method_code'   => 'required|string|exists:payment_methods,code',
-            'amount'                => 'required|numeric|min:0'
-        ]);
-
-        try {
-            $fee = $this->paymentService->calculatePaymentFee(
-                $request->payment_method_code,
-                $request->amount
-            );
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'fee' => $fee,
-                    'total_amount' => $request->amount + $fee
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
-    }
-
     public function show($code)
     {
         $paymentMethod = PaymentMethod::active()->where('code', $code)->firstOrFail();

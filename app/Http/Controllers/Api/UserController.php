@@ -142,7 +142,6 @@ class UserController extends Controller
         }
 
         $user = Auth::user();
-        $statusInfo = Status::getFormatted('userStatus', $user->status, true);
 
         return MessageResponseJson::success(
             'Profile retrieved successfully',
@@ -160,12 +159,7 @@ class UserController extends Controller
                 'province' => $user->province,
                 'postal_code' => $user->postal_code,
                 'avatar' => $user->avatar,
-                'status' => [
-                    'id' => $statusInfo['id'],
-                    'name' => $statusInfo['name'] ?? $user->name,
-                    'class' => $user->class,
-                    'icon' => $user->icon,
-                ],
+                'status' => Status::getFormatted('userStatus', $user->status, true),
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
                 'created_at' => $user->created_at,

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Facades\MessageResponseJson;
 use App\Http\Controllers\Controller;
+use App\Models\EventOrganizer;
 use App\Models\User;
 use App\Services\Status;
 use Illuminate\Http\JsonResponse;
@@ -44,7 +45,7 @@ class LoginController extends Controller
             //     return MessageResponseJson::unauthorized('Your account is not verified');
             // }
 
-            if ($user->status !== Status::getId('userStatus', 'ACTIVE')) {
+            if ($user->status !== $this->user::STATUS_ACTIVE) {
                 return MessageResponseJson::unauthorized('Your account is not active');
             }
 
@@ -113,7 +114,7 @@ class LoginController extends Controller
 
             if ($user->hasRole('Organizer')) {
                 $eventOrganizer = $user->eventOrganizer()
-                    ->where('status', 1)
+                    ->where('status', EventOrganizer::STATUS_ACTIVE)
                     ->where(function ($query) {
                         $query->whereIn('application_status', ['approved', 'pending', 'under_review'])
                             ->whereIn('verification_status', ['verified', 'pending']);

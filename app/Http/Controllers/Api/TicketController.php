@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Facades\MessageResponseJson;
+use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Ticket;
@@ -126,8 +127,16 @@ class TicketController extends Controller
 
             $tickets = [];
             foreach ($request->attendees as $attendee) {
-                $ticketCode = $this->generateUniqueTicketCode();
-                $qrCode = $this->generateUniqueQrCode();
+
+                $ticketCode = Helper::generateQrCode();
+                if ($this->ticket->where('ticket_code', $ticketCode)->exists()) {
+                    $ticketCode = Helper::generateQrCode();
+                }
+
+                $qrCode = Helper::generateQrCode();
+                if ($this->ticket->where('qr_code', $qrCode)->exists()) {
+                    $qrCode = Helper::generateQrCode();
+                }
 
                 $ticket = $this->ticket->create([
                     'ticket_code' => $ticketCode,
@@ -138,7 +147,7 @@ class TicketController extends Controller
                     'attendee_name' => $attendee['name'],
                     'attendee_email' => $attendee['email'],
                     'attendee_phone' => $attendee['phone'] ?? null,
-                    'status' => 1,
+                    'status' => $this->ticket::STATUS_ACTIVE,
                 ]);
 
                 $tickets[] = $ticket;
@@ -163,9 +172,6 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * Show a specific ticket
-     */
     public function show($uuid): JsonResponse
     {
         try {
@@ -345,7 +351,7 @@ class TicketController extends Controller
             }
 
             // Add validation info
-            $ticket->is_valid = $ticket->status === 1 && !$ticket->used_at;
+            $ticket->is_valid = $ticket->status === $this->ticket::STATUS_ACTIVE && !$ticket->used_at;
             $ticket->validation_message = $this->getValidationMessage($ticket);
 
             return MessageResponseJson::success('Ticket retrieved successfully', $ticket);
@@ -354,9 +360,6 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * Get user's tickets
-     */
     public function myTickets(Request $request): JsonResponse
     {
         try {
@@ -385,9 +388,6 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * Generate QR code image for ticket
-     */
     public function generateQrCodeImage($uuid)
     {
         try {
@@ -471,33 +471,6 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * Generate unique ticket code
-     */
-    private function generateUniqueTicketCode(): string
-    {
-        do {
-            $code = 'TKT-' . strtoupper(Str::random(8));
-        } while ($this->ticket->where('ticket_code', $code)->exists());
-
-        return $code;
-    }
-
-    /**
-     * Generate unique QR code
-     */
-    private function generateUniqueQrCode(): string
-    {
-        do {
-            $code = strtoupper(Str::random(16));
-        } while ($this->ticket->where('qr_code', $code)->exists());
-
-        return $code;
-    }
-
-    /**
-     * Get validation message for ticket
-     */
     private function getValidationMessage($ticket): string
     {
         if ($ticket->used_at) {
@@ -507,7 +480,6 @@ class TicketController extends Controller
         if ($ticket->status !== 1) {
             return 'Ticket is not active';
         }
-
         $now = now();
         $event = $ticket->ticketType->event;
 

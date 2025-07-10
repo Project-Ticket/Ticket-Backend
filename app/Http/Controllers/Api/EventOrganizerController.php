@@ -235,7 +235,7 @@ class EventOrganizerController extends Controller
                 'application_submitted_at' => now(),
                 'verification_status'     => 'pending',
                 'application_status'      => 'pending',
-                'status'                  => Status::getId('eventOrganizerStatus', 'PENDING'),
+                'status'                  => $this->eventOrganizer::STATUS_PENDING,
             ]);
 
             $invoiceData = [
@@ -760,7 +760,7 @@ class EventOrganizerController extends Controller
                 ->with('user:id,name')
                 ->where('organization_slug', $slug)
                 ->where('verification_status', 'verified')
-                ->where('status', 1)
+                ->where('status', $this->eventOrganizer::STATUS_ACTIVE)
                 ->first();
 
             if (!$eventOrganizer) {

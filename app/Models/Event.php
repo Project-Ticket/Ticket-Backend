@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
 {
+    const STATUS_DRAFT = 1;
+    const STATUS_PUBLISHED = 2;
+    const STATUS_CANCELLED = 3;
+    const STATUS_COMPLETED = 4;
     // protected $guarded = ['id'];
 
     protected $fillable = [

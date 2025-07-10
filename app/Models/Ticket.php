@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Ticket extends Model
 {
+    const STATUS_INACTIVE = 1;
+    const STATUS_PENDING_PAYMENT = 2;
+    const STATUS_ACTIVE = 3;
+    const STATUS_USED = 4;
+    const STATUS_CANCELLED = 5;
+    const STATUS_TRANSFERED = 6;
     use HasUUID;
 
     protected $guarded = ['id'];

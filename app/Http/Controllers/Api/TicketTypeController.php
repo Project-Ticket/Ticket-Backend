@@ -24,13 +24,7 @@ class TicketTypeController extends Controller
     public function index(Request $request, $eventId = null): JsonResponse
     {
         try {
-            $query = $this->ticketType->with([
-                'event:id,title,slug,organizer_id',
-                'orders' => function ($q) {
-                    $q->select('ticket_type_id', DB::raw('COUNT(*) as total_orders'))
-                        ->groupBy('ticket_type_id');
-                }
-            ]);
+            $query = $this->ticketType->with('event:id,title,slug,organizer_id');
 
             if ($eventId) {
                 $query->where('event_id', $eventId);
@@ -73,15 +67,7 @@ class TicketTypeController extends Controller
                 $query->orderBy($sortBy, $sortOrder);
             }
 
-            $ticketTypes = $query->paginate($request->get('per_page', 15))->through(function ($ticketType) {
-                $ticketType->total_orders = optional($ticketType->orders->first())->total_orders ?? 0;
-                $ticketType->total_revenue = $ticketType->total_orders * $ticketType->price;
-                $ticketType->available_quantity = $ticketType->quantity - $ticketType->sold_quantity;
-
-                unset($ticketType->orders);
-
-                return $ticketType;
-            });
+            $ticketTypes = $query->paginate($request->get('per_page', 15));
 
             return MessageResponseJson::paginated('Ticket types retrieved successfully', $ticketTypes);
         } catch (\Throwable $th) {
