@@ -108,8 +108,8 @@ class OrderController extends Controller
             'admin_fee' => 'nullable|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
-            // 'success_redirect_url' => 'required|url',
-            // 'failure_redirect_url' => 'required|url',
+            'success_redirect_url' => 'required|url',
+            'failure_redirect_url' => 'required|url',
         ]);
 
         if ($validator->fails()) {

@@ -191,7 +191,7 @@ class EventController extends Controller
                 'organizer:id,organization_name,organization_slug,logo,description,website,instagram,twitter,facebook,contact_person,contact_phone,contact_email',
                 'category:id,name',
                 'tags:id,name'
-            ])->where('slug', $slug)->orWhere('id', $slug)->first();
+            ])->withCount(['orders as total_order'])->where('slug', $slug)->orWhere('id', $slug)->first();
 
             if (!$event) {
                 return MessageResponseJson::notFound('Event not found');
