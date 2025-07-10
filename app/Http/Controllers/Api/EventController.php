@@ -33,7 +33,11 @@ class EventController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = $this->event->with(['organizer:id,organization_name,organization_slug,logo', 'category:id,name', 'tags:id,name']);
+            $query = $this->event->with([
+                'organizer:id,organization_name,organization_slug,logo',
+                'category:id,name',
+                'tags:id,name'
+            ])->withCount(['orders as total_order']);
 
             foreach (['status', 'category_id', 'organizer_id', 'type'] as $filter) {
                 if ($request->filled($filter)) {
