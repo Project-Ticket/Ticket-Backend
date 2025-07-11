@@ -413,6 +413,7 @@ class EventOrganizerController extends Controller
             }
 
             $uploadedDocuments = json_decode($eventOrganizer->uploaded_documents, true) ?? [];
+
             if ($request->hasFile('uploaded_documents')) {
                 foreach ($request->file('uploaded_documents') as $file) {
                     $uploadedDocuments[] = $file->store('event-organizers/documents', 'public');

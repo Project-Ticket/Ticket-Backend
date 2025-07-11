@@ -344,7 +344,6 @@ class OrderController extends Controller
                 return MessageResponseJson::badRequest('Order cannot be modified');
             }
 
-            // Cegah update field yang tidak diizinkan
             $forbiddenFields = ['payment_status', 'status', 'user_id', 'event_id', 'subtotal', 'total_amount'];
             foreach ($forbiddenFields as $field) {
                 if ($request->has($field)) {
@@ -401,7 +400,6 @@ class OrderController extends Controller
                 }
             }
 
-            // Pastikan ada perubahan yang akan dilakukan
             if (empty($updateData)) {
                 return MessageResponseJson::badRequest('No valid fields to update');
             }

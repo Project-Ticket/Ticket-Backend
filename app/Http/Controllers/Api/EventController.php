@@ -133,6 +133,7 @@ class EventController extends Controller
             $baseSlug = Str::slug($request->title);
             $slug = $baseSlug;
             $counter = 1;
+
             while ($this->event->where('slug', $slug)->exists()) {
                 $slug = $baseSlug . '-' . $counter++;
             }
@@ -145,34 +146,27 @@ class EventController extends Controller
                 }
             }
 
-            $data = $request->except('tags');
-            $data['organizer_id'] = $organizer->id;
-            $data['slug'] = $slug;
-            $data['banner_image'] = $bannerPath;
-            $data['gallery_images'] = $galleryPaths ? json_encode($galleryPaths) : null;
-            $data['status'] = $this->event::STATUS_DRAFT;
-            $data['is_featured'] = $request->boolean('is_featured');
-            $data['views_count'] = 0;
-            $data['status'] = $request->input('status', 1);
+            $data = [
+                'organizer_id' => $organizer->id,
+                'slug' => $slug,
+                'banner_image' => $bannerPath,
+                'gallery_images' => $galleryPaths ? json_encode($galleryPaths) : null,
+                'status' => $this->event::STATUS_DRAFT,
+                'is_featured' => $request->boolean('is_featured'),
+                'views_count' => 0,
+            ];
 
             $event = $this->event->create($data);
 
             if ($request->filled('tags')) {
-                $tagIds = collect($request->tags)->map(function ($tagName) {
-                    return Tag::firstOrCreate(['name' => $tagName, 'slug' => Str::slug($tagName)])->id;
-                });
+                $tagIds = collect($request->tags)
+                    ->map(fn($tagName) => Tag::firstOrCreate([
+                        'name' => $tagName,
+                        'slug' => Str::slug($tagName)
+                    ])->id);
 
-                $tagData = $tagIds->map(function ($tagId) use ($event) {
-                    return [
-                        'event_id' => $event->id,
-                        'tag_id' => $tagId,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                })->toArray();
-                EventTag::insert($tagData);
+                $event->tags()->sync($tagIds);
             }
-
             DB::commit();
 
             $event->load(['organizer:id,organization_name,organization_slug,logo', 'category:id,name', 'tags:id,name']);
@@ -279,9 +273,10 @@ class EventController extends Controller
                 }
                 $data['gallery_images'] = json_encode($galleryPaths);
             }
-
-            $data['is_featured'] = $request->boolean('is_featured', $event->is_featured);
-            $data['status'] = $request->status ?? $event->status;
+            $data = [
+                'is_featured' => $request->boolean('is_featured', $event->is_featured),
+                'status' => $request->status ?? $event->status
+            ];
 
             $event->update($data);
 
