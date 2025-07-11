@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\EventOrganizerController;
 use App\Http\Controllers\Api\OrderController;
@@ -124,6 +125,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index');
         Route::get('/{code}/show', 'show');
         Route::post('/calculate-fee', 'calculateFee');
+    });
+
+    Route::group(['prefix' => 'coupon', 'controller' => CouponController::class], function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::get('/{uuid}/show', 'show');
+        Route::put('/{uuid}/update', 'update');
+        Route::delete('/{uuid}/delete', 'destroy');
+
+        Route::get('/generate-coupon-code', 'generateCouponCode');
     });
 
     Route::get('/category', [CategoryController::class, 'index']);
