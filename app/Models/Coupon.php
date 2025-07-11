@@ -9,4 +9,9 @@ class Coupon extends Model
 {
     use HasUUID;
     protected $guarded = ['id'];
+
+    public function organizer()
+    {
+        return $this->belongsTo(EventOrganizer::class);
+    }
 }

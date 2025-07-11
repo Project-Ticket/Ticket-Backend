@@ -49,12 +49,10 @@
                 </a>
             </li>
 
-
-            <!-- Review Moderation -->
-            <li class="menu-item {{ Request::segment(2) == 'review' ? 'active' : '' }}">
-                <a href="{{ url('review.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons ti ti-message-check"></i>
-                    <div>Review Moderation</div>
+            <li class="menu-item {{ Request::segment(2) == 'coupon' ? 'active' : '' }}">
+                <a href="{{ route('coupon') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-invoice"></i>
+                    <div>Coupun</div>
                 </a>
             </li>
 

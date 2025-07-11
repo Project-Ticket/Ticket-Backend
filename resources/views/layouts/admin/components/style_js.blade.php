@@ -17,7 +17,15 @@
 <script src="{{ url('/admin') }}/vendor/libs/apex-charts/apexcharts.js"></script>
 <script src="{{ url('/admin') }}/vendor/libs/swiper/swiper.js"></script>
 <script src="{{ url('/admin') }}/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
-<script src="{{ url('/admin') }}/js/form-basic-inputs.js"></script>
+{{--
+<script src="{{ url('/admin') }}/js/form-basic-inputs.js"></script> --}}
+
+<script src="{{ url('/admin') }}/js/form-layouts.js"></script>
+<script src="{{url('/admin')}}/vendor/libs/cleavejs/cleave.js"></script>
+<script src="{{url('/admin')}}/vendor/libs/cleavejs/cleave-phone.js"></script>
+<script src="{{url('/admin')}}/vendor/libs/moment/moment.js"></script>
+<script src="{{url('/admin')}}/vendor/libs/flatpickr/flatpickr.js"></script>
+<script src="{{ url('/admin') }}/vendor/libs/select2/select2.js"></script>
 
 <!-- Main JS -->
 <script src="{{ url('/admin') }}/js/main.js"></script>

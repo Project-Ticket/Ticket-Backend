@@ -40,6 +40,7 @@
 
 <!-- Page CSS -->
 <link rel="stylesheet" href="{{ url('/admin') }}/vendor/css/pages/cards-advance.css" />
+<link rel="stylesheet" href="{{ url('/admin') }}/vendor/libs/select2/select2.css" />
 <!-- Helpers -->
 <script src="{{ url('/admin') }}/vendor/js/helpers.js"></script>
 

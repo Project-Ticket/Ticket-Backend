@@ -7,11 +7,11 @@ use App\Http\Controllers\Web\Config\AssignPermissionController;
 use App\Http\Controllers\Web\Config\PaymentMethodController;
 use App\Http\Controllers\Web\Config\PermissionController;
 use App\Http\Controllers\Web\Config\SettingController;
+use App\Http\Controllers\Web\CouponController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\EventController;
 use App\Http\Controllers\Web\EventOragnizerController;
 use App\Http\Controllers\Web\UserController;
-use App\Http\Controllers\Web\UserEventOrganizerController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -110,6 +110,14 @@ Route::prefix('~admin-panel')->group(function () {
                 Route::delete('/{id}', 'destroy')->name('payment-method.destroy');
             });
         });
+        Route::get('/coupon', [CouponController::class, 'index'])->name('coupon');
+        Route::get('/coupon/getData', [CouponController::class, 'getData'])->name('coupon.getData');
+        Route::get('/coupon/create', [CouponController::class, 'create'])->name('coupon.create');
+        Route::post('/coupon/store', [CouponController::class, 'store'])->name('coupon.store');
+        Route::get('/coupon/{id}/show', [CouponController::class, 'show'])->name('coupon.show');
+        Route::delete('/coupon/{id}/delete', [CouponController::class, 'destroy'])->name('coupon.destroy');
+        Route::get('/coupon/generate', [CouponController::class, 'generateCouponCode'])->name('coupon.generate');
+
         Route::get('/', [DashboardController::class, 'admin'])->name('dashboard');
 
         Route::get('/logout', LogoutController::class)->name('logout');
